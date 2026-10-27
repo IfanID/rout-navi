@@ -274,7 +274,7 @@ class LocalFileHolder(val file: File) : ContentHolder() {
 
         if (FileMimeType.supportedArchiveFileType.contains(extension)) {
             if (isApk() && skipSupportedExtensions) return false
-            globalClass.zipManager.openArchive(this)
+            globalClass.archiveManager.openArchive(this)
             return true
         }
 

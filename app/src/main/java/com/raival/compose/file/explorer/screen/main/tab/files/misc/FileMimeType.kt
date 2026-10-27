@@ -43,12 +43,15 @@ object FileMimeType {
 
     @JvmField
     val archiveFileType = arrayOf(
-        "zip", "7z", "tar", "jar", "gz", "xz", "obb", "rar",
-        "iso", "bz2", "tgz", "tbz2", "lz", "lzma"
+        "zip", "7z", "tar", "jar", "gz", "xz", "obb", "rar", "apk", "apks",
+        "iso", "bz2", "tgz", "tbz2", "tbz", "txz", "lz", "lzma"
     )
 
+    // Arsip yang bisa dibuka dan diekstrak langsung tanpa ekstraksi manual.
     @JvmField
-    val supportedArchiveFileType = arrayOf("zip", "jar", "apk", "apks")
+    val supportedArchiveFileType = arrayOf(
+        "zip", "jar", "apk", "apks", "rar", "7z", "tar"
+    )
 
     @JvmField
     val videoFileType = arrayOf(

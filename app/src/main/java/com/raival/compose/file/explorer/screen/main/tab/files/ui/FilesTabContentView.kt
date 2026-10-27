@@ -9,9 +9,11 @@ import androidx.compose.ui.unit.dp
 import com.raival.compose.file.explorer.screen.main.tab.files.FilesTab
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.ApkPreviewDialog
+import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.ArchivePasswordDialog
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.BookmarksDialog
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.CreateNewFileDialog
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.DeleteConfirmationDialog
+import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.ExtractArchiveDialog
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.FileCompressionDialog
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.FileOptionsMenuDialog
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.FilePropertiesDialog
@@ -104,6 +106,20 @@ fun Dialogs(tab: FilesTab) {
         show = dialogsState.value.showNewZipFileDialog && tab.compressTaskHolder != null,
         tab = tab,
         onDismissRequest = { tab.toggleCompressTaskDialog(null) }
+    )
+
+    ExtractArchiveDialog(
+        show = dialogsState.value.showExtractArchiveDialog && tab.pendingArchiveExtraction != null,
+        defaultPath = tab.pendingArchiveExtraction?.destinationPath ?: "",
+        onDismissRequest = { tab.dismissExtractArchiveDialog() },
+        onConfirm = { tab.confirmExtractDestination(it) }
+    )
+
+    ArchivePasswordDialog(
+        show = dialogsState.value.showArchivePasswordDialog && tab.pendingArchiveExtraction != null,
+        archiveName = tab.pendingArchiveExtraction?.archive?.displayName ?: "",
+        onDismissRequest = { tab.dismissArchivePasswordDialog() },
+        onConfirm = { tab.confirmArchivePassword(it) }
     )
 
     FileOptionsMenuDialog(

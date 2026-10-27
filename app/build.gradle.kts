@@ -106,4 +106,9 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.storage)
     implementation(libs.zip4j)
+    // Pembaca arsip non-ZIP: RAR (junrar), 7Z dan TAR (commons-compress).
+    implementation(libs.commons.compress)
+    implementation(libs.junrar)
+    implementation(libs.xz)
+    implementation(libs.slf4j.nop)
 }

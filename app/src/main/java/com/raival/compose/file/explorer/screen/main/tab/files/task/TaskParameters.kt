@@ -11,7 +11,13 @@ data class CopyTaskParameters(
 class DeleteTaskParameters : TaskParameters
 
 data class CompressTaskParameters(
-    val destPath: String
+    val destPath: String,
+    val format: CompressFormat = CompressFormat.ZIP
+) : TaskParameters
+
+data class ExtractTaskParameters(
+    val destinationPath: String,
+    val password: String?
 ) : TaskParameters
 
 data class RenameTaskParameters(

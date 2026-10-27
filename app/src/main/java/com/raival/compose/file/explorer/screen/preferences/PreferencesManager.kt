@@ -314,6 +314,13 @@ class PreferencesManager {
         }
     }
 
+    //---------- Compression -------------//
+    var defaultCompressFormat by prefMutableState(
+        keyName = "defaultCompressFormat",
+        defaultValue = "ZIP",
+        getPreferencesKey = { stringPreferencesKey(it) }
+    )
+
     fun setSortingPrefsFor(content: ContentHolder, prefs: FileSortingPrefs) {
         runBlocking {
             globalClass.prefDataStore.edit {

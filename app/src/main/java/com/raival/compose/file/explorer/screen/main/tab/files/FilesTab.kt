@@ -26,6 +26,8 @@ import com.raival.compose.file.explorer.common.orIf
 import com.raival.compose.file.explorer.common.removeIf
 import com.raival.compose.file.explorer.screen.main.MainActivity
 import com.raival.compose.file.explorer.screen.main.tab.Tab
+import com.raival.compose.file.explorer.screen.main.tab.files.archive.ArchiveFormat
+import com.raival.compose.file.explorer.screen.main.tab.files.holder.ArchiveFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.ContentHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFileHolder
@@ -36,7 +38,11 @@ import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.
 import com.raival.compose.file.explorer.screen.main.tab.files.provider.StorageProvider
 import com.raival.compose.file.explorer.screen.main.tab.files.state.BottomOptionsBarState
 import com.raival.compose.file.explorer.screen.main.tab.files.state.DialogsState
+import com.raival.compose.file.explorer.screen.main.tab.files.state.PendingArchiveExtraction
 import com.raival.compose.file.explorer.screen.main.tab.files.task.CompressTask
+import com.raival.compose.file.explorer.screen.main.tab.files.task.ExtractTask
+import com.raival.compose.file.explorer.screen.main.tab.files.task.ExtractTaskParameters
+import com.raival.compose.file.explorer.screen.main.tab.files.zip.ZipTree
 import com.reandroid.archive.ZipAlign
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,8 +52,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import net.lingala.zip4j.ZipFile
-import net.lingala.zip4j.model.ZipParameters
 import java.io.File
 
 class FilesTab(
@@ -89,8 +93,9 @@ class FilesTab(
     // Holds the file that has been long-clicked
     var targetFile: ContentHolder? = null
     var compressTaskHolder: CompressTask? = null
+    var pendingArchiveExtraction by mutableStateOf<PendingArchiveExtraction?>(null)
 
-    // Used to detect changes to an already updated ZipTree in ZipManager
+    // Dipakai untuk mendeteksi perubahan pada ArchiveTree yang sudah diperbarui.
     var zipSourceTimestamp = -1L
 
     private val _dialogsState = MutableStateFlow(DialogsState())
@@ -327,9 +332,9 @@ class FilesTab(
         // Update the path list
         updatePathList()
 
-        // Update the zipSourceTimestamp if the active folder is a zip file
-        if (activeFolder is ZipFileHolder) {
-            zipSourceTimestamp = (activeFolder as ZipFileHolder).zipTree.timeStamp
+        // Update the zipSourceTimestamp if the active folder is inside an archive
+        if (activeFolder is ArchiveFileHolder) {
+            zipSourceTimestamp = (activeFolder as ArchiveFileHolder).archiveTree.timeStamp
         }
 
         // Get the content of the new folder
@@ -370,9 +375,9 @@ class FilesTab(
 
     private fun shouldNavigateToParentTab(): Boolean {
         return parentTab isNot null
-                && activeFolder is ZipFileHolder
-                && with(activeFolder as ZipFileHolder) {
-            runBlocking { getParent()?.uniquePath == zipTree.source.getParent()?.uniquePath }
+                && activeFolder is ArchiveFileHolder
+                && with(activeFolder as ArchiveFileHolder) {
+            runBlocking { getParent()?.uniquePath == archiveTree.source.getParent()?.uniquePath }
         }
     }
 
@@ -439,43 +444,41 @@ class FilesTab(
                 reloadFiles()
                 return true
             }
-        } else if (activeFolder is ZipFileHolder) {
-            val invalidZipTrees = globalClass.zipManager.validateArchiveTrees()
-            if (invalidZipTrees.contains((activeFolder as ZipFileHolder).zipTree.source.uniquePath)) {
+        } else if (activeFolder is ArchiveFileHolder) {
+            val archiveTree = (activeFolder as ArchiveFileHolder).archiveTree
+            val invalidTrees = globalClass.archiveManager.validateArchiveTrees()
+            if (invalidTrees.contains(archiveTree.source.uniquePath)) {
                 validateActiveFolder()
-            } else if (globalClass.zipManager.checkForSourceChanges()) {
-                // Check if the source any of the files that have been extracted has changed
-                val zipTree = (activeFolder as ZipFileHolder).zipTree
-                val changedFiles = zipTree.checkExtractedFiles()
+            } else if (globalClass.archiveManager.checkForSourceChanges()) {
+                // Perubahan pada file hasil ekstrak hanya bisa ditulis balik ke ZIP.
+                val changedFiles = archiveTree.checkExtractedFiles()
                 if (changedFiles.isNotEmpty()) {
-                    isLoading = true
-                    ZipFile(zipTree.source.file).use { zipFile ->
+                    if (archiveTree is ZipTree) {
+                        isLoading = true
                         changedFiles.forEach { changedFile ->
-                            zipTree.getRelatedNode(changedFile)?.let { node ->
-                                zipFile.addFile(
-                                    changedFile.file,
-                                    ZipParameters().apply {
-                                        fileNameInZip = node.path
-                                        isOverrideExistingFilesInZip = true
-                                    }
-                                )
+                            archiveTree.getRelatedNode(changedFile)?.let { node ->
+                                archiveTree.replaceEntry(node, changedFile)
                             }
                             changedFile.resetCachedTimestamp()
                         }
-                    }
-                    if (zipTree.source.extension == apkFileType) {
-                        try {
-                            ZipAlign.alignApk(zipTree.source.file)
-                        } catch (e: Exception) {
-                            logger.logError(e)
+                        if (archiveTree.source.extension == apkFileType) {
+                            try {
+                                ZipAlign.alignApk(archiveTree.source.file)
+                            } catch (e: Exception) {
+                                logger.logError(e)
+                            }
                         }
+                        isLoading = false
+                    } else {
+                        // Arsip lain bersifat baca-saja, cukup tandai perubahan
+                        // sudah diketahui agar tidak memicu reload berulang.
+                        changedFiles.forEach { it.resetCachedTimestamp() }
                     }
-                    isLoading = false
                 }
-                zipTree.reset()
+                archiveTree.reset()
                 reloadFiles()
                 return true
-            } else if (zipSourceTimestamp isNot (activeFolder as ZipFileHolder).zipTree.timeStamp) {
+            } else if (zipSourceTimestamp isNot archiveTree.timeStamp) {
                 reloadFiles()
                 return true
             }
@@ -706,10 +709,10 @@ class FilesTab(
         )
     }
 
-    fun extractZipHolderForPreview(zipFileHolder: ZipFileHolder, onDone: (String) -> Unit) {
+    fun extractArchiveHolderForPreview(holder: ArchiveFileHolder, onDone: (String) -> Unit) {
         isLoading = true
         scope.launch {
-            val newFilePath = zipFileHolder.extractForPreview()
+            val newFilePath = holder.extractForPreview()
             isLoading = false
             withContext(Dispatchers.Main) {
                 onDone(newFilePath)
@@ -744,6 +747,97 @@ class FilesTab(
         } else {
             _dialogsState.update { it.copy(showNewZipFileDialog = false) }
         }
+    }
+
+    /**
+     * Nama folder tujuan untuk "Ekstrak ke ./<nama arsip>/".
+     * Akhiran gabungan seperti .tar.gz dibuang sekaligus.
+     */
+    fun getArchiveBaseName(archive: LocalFileHolder): String {
+        val fileName = archive.file.name
+        val compoundSuffixes = listOf(
+            ".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".tbz2", ".tbz", ".txz"
+        )
+
+        compoundSuffixes.forEach { suffix ->
+            if (fileName.endsWith(suffix, ignoreCase = true)) {
+                return fileName.dropLast(suffix.length)
+            }
+        }
+
+        return fileName.substringBeforeLast('.', fileName)
+    }
+
+    fun toggleExtractArchiveDialog(archive: LocalFileHolder?) {
+        if (archive == null) {
+            pendingArchiveExtraction = null
+            _dialogsState.update { it.copy(showExtractArchiveDialog = false) }
+            return
+        }
+
+        val currentFolder = activeFolder as? LocalFileHolder ?: return
+        pendingArchiveExtraction = PendingArchiveExtraction(
+            archive = archive,
+            destinationPath = File(currentFolder.file, getArchiveBaseName(archive)).absolutePath
+        )
+        _dialogsState.update { it.copy(showExtractArchiveDialog = true) }
+    }
+
+    fun dismissExtractArchiveDialog() {
+        pendingArchiveExtraction = null
+        _dialogsState.update { it.copy(showExtractArchiveDialog = false) }
+    }
+
+    fun confirmExtractDestination(destinationPath: String) {
+        val pending = pendingArchiveExtraction ?: return
+        pendingArchiveExtraction = null
+        _dialogsState.update { it.copy(showExtractArchiveDialog = false) }
+        startArchiveExtraction(pending.archive, destinationPath)
+    }
+
+    /**
+     * Memulai ekstraksi. Jika arsip terenkripsi, dialog password ditampilkan
+     * lebih dulu agar task tidak langsung gagal.
+     */
+    fun startArchiveExtraction(archive: LocalFileHolder, destinationPath: String) {
+        scope.launch {
+            val needsPassword = ArchiveFormat.requiresPassword(archive)
+
+            withContext(Dispatchers.Main) {
+                if (needsPassword) {
+                    pendingArchiveExtraction = PendingArchiveExtraction(
+                        archive = archive,
+                        destinationPath = destinationPath
+                    )
+                    _dialogsState.update { it.copy(showArchivePasswordDialog = true) }
+                } else {
+                    runExtractTask(archive, destinationPath, null)
+                }
+            }
+        }
+    }
+
+    fun dismissArchivePasswordDialog() {
+        pendingArchiveExtraction = null
+        _dialogsState.update { it.copy(showArchivePasswordDialog = false) }
+    }
+
+    fun confirmArchivePassword(password: String) {
+        val pending = pendingArchiveExtraction ?: return
+        pendingArchiveExtraction = null
+        _dialogsState.update { it.copy(showArchivePasswordDialog = false) }
+        runExtractTask(pending.archive, pending.destinationPath, password)
+    }
+
+    private fun runExtractTask(
+        archive: LocalFileHolder,
+        destinationPath: String,
+        password: String?
+    ) {
+        globalClass.taskManager.addTaskAndRun(
+            ExtractTask(archive, password),
+            ExtractTaskParameters(destinationPath, password)
+        )
     }
 
     fun toggleBookmarksDialog(show: Boolean) {

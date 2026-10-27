@@ -10,9 +10,11 @@ import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.BookmarkAdd
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.ContentCut
+import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.FileCopy
+import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.FormatColorText
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Info
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.rounded.Merge
 import androidx.compose.material.icons.rounded.OpenInNewOff
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,17 +51,19 @@ import com.raival.compose.file.explorer.common.toJson
 import com.raival.compose.file.explorer.common.ui.BottomSheetDialog
 import com.raival.compose.file.explorer.common.ui.Space
 import com.raival.compose.file.explorer.screen.main.tab.files.FilesTab
+import com.raival.compose.file.explorer.screen.main.tab.files.holder.ArchiveFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFileHolder
-import com.raival.compose.file.explorer.screen.main.tab.files.holder.ZipFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.DefaultOpeningMethods
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.apkBundleFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.supportedArchiveFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.task.ApksMergeTask
 import com.raival.compose.file.explorer.screen.main.tab.files.task.ApksMergeTaskParameters
 import com.raival.compose.file.explorer.screen.main.tab.files.task.CompressTask
 import com.raival.compose.file.explorer.screen.main.tab.files.task.CopyTask
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.FileIcon
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.ItemRow
+import java.io.File
 
 @Composable
 fun FileOptionsMenuDialog(
@@ -314,7 +319,40 @@ fun FileOptionsMenuDialog(
                 }
             }
 
-            if (tab.activeFolder !is ZipFileHolder) {
+            if (isSingleFile && targetContentHolder is LocalFileHolder &&
+                supportedArchiveFileType.contains(targetContentHolder.file.extension) &&
+                tab.activeFolder is LocalFileHolder
+            ) {
+                val archive = targetContentHolder
+                val currentFolder = tab.activeFolder as LocalFileHolder
+                val archiveBaseName = tab.getArchiveBaseName(archive)
+
+                FileOption(Icons.Rounded.Unarchive, stringResource(R.string.extract_here)) {
+                    onDismissRequest()
+                    tab.startArchiveExtraction(archive, currentFolder.file.absolutePath)
+                    tab.unselectAllFiles()
+                }
+
+                FileOption(
+                    Icons.Rounded.CreateNewFolder,
+                    stringResource(R.string.extract_to_folder, archiveBaseName)
+                ) {
+                    onDismissRequest()
+                    tab.startArchiveExtraction(
+                        archive,
+                        File(currentFolder.file, archiveBaseName).absolutePath
+                    )
+                    tab.unselectAllFiles()
+                }
+
+                FileOption(Icons.Rounded.FolderOpen, stringResource(R.string.extract_to)) {
+                    onDismissRequest()
+                    tab.toggleExtractArchiveDialog(archive)
+                    tab.unselectAllFiles()
+                }
+            }
+
+            if (tab.activeFolder !is ArchiveFileHolder) {
                 FileOption(Icons.Rounded.Compress, stringResource(R.string.compress)) {
                     CompressTask(targetFiles).let { task ->
                         globalClass.taskManager.addTask(task, false)
