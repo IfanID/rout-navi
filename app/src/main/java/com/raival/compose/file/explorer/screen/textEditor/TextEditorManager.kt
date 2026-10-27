@@ -27,17 +27,29 @@ import com.raival.compose.file.explorer.common.isDarkTheme
 import com.raival.compose.file.explorer.common.isNot
 import com.raival.compose.file.explorer.common.whiteSpace
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.assFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.dfxpFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.javaFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.jsonFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.kotlinFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.lrcFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.srtFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.ssaFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.ttmlFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.vttFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.xmlFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.Language.LANGUAGE_ASS
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.Language.LANGUAGE_JAVA
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.Language.LANGUAGE_JSON
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.Language.LANGUAGE_KOTLIN
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.Language.LANGUAGE_LRC
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.Language.LANGUAGE_SRT
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.Language.LANGUAGE_VTT
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.Language.LANGUAGE_XML
 import com.raival.compose.file.explorer.screen.textEditor.holder.SymbolHolder
 import com.raival.compose.file.explorer.screen.textEditor.language.json.JsonCodeLanguage
 import com.raival.compose.file.explorer.screen.textEditor.language.kotlin.KotlinCodeLanguage
+import com.raival.compose.file.explorer.screen.textEditor.language.subtitle.SubtitleCodeLanguage
 import com.raival.compose.file.explorer.screen.textEditor.language.xml.XmlCodeLanguage
 import com.raival.compose.file.explorer.screen.textEditor.model.Searcher
 import com.raival.compose.file.explorer.screen.textEditor.model.WarningDialogProperties
@@ -370,6 +382,14 @@ class TextEditorManager {
                 }
             }
 
+            LANGUAGE_SRT -> setSubtitleLanguage(codeEditor, SubtitleCodeLanguage.SCOPE_SRT)
+
+            LANGUAGE_VTT -> setSubtitleLanguage(codeEditor, SubtitleCodeLanguage.SCOPE_VTT)
+
+            LANGUAGE_ASS -> setSubtitleLanguage(codeEditor, SubtitleCodeLanguage.SCOPE_ASS)
+
+            LANGUAGE_LRC -> setSubtitleLanguage(codeEditor, SubtitleCodeLanguage.SCOPE_LRC)
+
             else -> {
                 codeEditor.apply {
                     setEditorLanguage(EmptyLanguage())
@@ -377,6 +397,16 @@ class TextEditorManager {
             }
         }
         resetColorScheme(codeEditor, true)
+    }
+
+    /**
+     * Grammar subtitle dimuat dari aset dan bisa gagal ditemukan. Kalau itu
+     * terjadi, editor memakai teks polos agar tetap bisa dibuka dan diedit.
+     */
+    private fun setSubtitleLanguage(codeEditor: CodeEditor, scopeName: String) {
+        codeEditor.setEditorLanguage(
+            SubtitleCodeLanguage.create(scopeName) ?: EmptyLanguage()
+        )
     }
 
     private fun analyseFile() {
@@ -394,6 +424,12 @@ class TextEditorManager {
             kotlinFileType -> setCodeEditorLanguage(codeEditor, LANGUAGE_KOTLIN)
             jsonFileType -> setCodeEditorLanguage(codeEditor, LANGUAGE_JSON)
             xmlFileType -> setCodeEditorLanguage(codeEditor, LANGUAGE_XML)
+            srtFileType -> setCodeEditorLanguage(codeEditor, LANGUAGE_SRT)
+            vttFileType -> setCodeEditorLanguage(codeEditor, LANGUAGE_VTT)
+            assFileType, ssaFileType -> setCodeEditorLanguage(codeEditor, LANGUAGE_ASS)
+            lrcFileType -> setCodeEditorLanguage(codeEditor, LANGUAGE_LRC)
+            // TTML/DFXP berformat XML, jadi cukup memakai grammar XML yang sudah ada.
+            ttmlFileType, dfxpFileType -> setCodeEditorLanguage(codeEditor, LANGUAGE_XML)
             else -> setCodeEditorLanguage(codeEditor, -1)
         }
     }

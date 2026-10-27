@@ -23,6 +23,30 @@
       "name": "XML",
       "scopeName": "text.xml",
       "languageConfiguration": "textmate/xml/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/subtitle/syntax/srt.tmLanguage.json",
+      "name": "SubRip",
+      "scopeName": "source.srt",
+      "languageConfiguration": "textmate/subtitle/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/subtitle/syntax/vtt.tmLanguage.json",
+      "name": "WebVTT",
+      "scopeName": "source.vtt",
+      "languageConfiguration": "textmate/subtitle/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/subtitle/syntax/ass.tmLanguage.json",
+      "name": "Advanced SubStation Alpha",
+      "scopeName": "source.ass",
+      "languageConfiguration": "textmate/subtitle/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/subtitle/syntax/lrc.tmLanguage.json",
+      "name": "Lyrics",
+      "scopeName": "source.lrc",
+      "languageConfiguration": "textmate/subtitle/language-configuration.json"
     }
   ]
 }

@@ -23,6 +23,8 @@ import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.codeFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.editableFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.prismPrefsFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.subFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.subtitleBinaryFileType
 import com.raival.compose.file.explorer.screen.viewer.audio.AudioPlayerActivity
 import com.raival.compose.file.explorer.screen.viewer.image.ImageViewerActivity
 import com.raival.compose.file.explorer.screen.viewer.pdf.PdfViewerActivity
@@ -278,6 +280,15 @@ class LocalFileHolder(val file: File) : ContentHolder() {
 
         if (skipSupportedExtensions) return false
 
+        // VobSub menyimpan gambar di balik ekstensi .sub, isinya biner sehingga
+        // tidak bisa dibuka sebagai teks. MicroDVD (.sub teks) tetap dibuka.
+        if (subtitleBinaryFileType.contains(extension) ||
+            (extension == subFileType && isVobSubFile())
+        ) {
+            globalClass.showMsg(R.string.subtitle_bitmap_not_supported)
+            return true
+        }
+
         if (codeFileType.contains(extension) || editableFileType.contains(extension)) {
             globalClass.textEditorManager.openTextEditor(
                 this,
@@ -323,6 +334,27 @@ class LocalFileHolder(val file: File) : ContentHolder() {
         }
 
         return false
+    }
+
+    /**
+     * VobSub (.sub) menyimpan paket MPEG-PS, bukan teks. Cek 4 byte awal
+     * (`00 00 01 BA`..`BF`) supaya .sub teks MicroDVD tidak ikut tertolak.
+     */
+    private fun isVobSubFile(): Boolean {
+        if (!file.isFile || file.length() < 4) return false
+
+        return try {
+            file.inputStream().use { stream ->
+                val header = ByteArray(4)
+                stream.read(header) == 4 &&
+                        header[0] == 0x00.toByte() &&
+                        header[1] == 0x00.toByte() &&
+                        header[2] == 0x01.toByte() &&
+                        (header[3].toInt() and 0xFF) in 0xBA..0xBF
+            }
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun createUri() = FileProvider.getUriForFile(

@@ -14,6 +14,15 @@ object FileMimeType {
     const val prismPrefsFileType = "prismprefs"
     const val anyFileType = "*/*"
 
+    const val srtFileType = "srt"
+    const val vttFileType = "vtt"
+    const val assFileType = "ass"
+    const val ssaFileType = "ssa"
+    const val subFileType = "sub"
+    const val lrcFileType = "lrc"
+    const val ttmlFileType = "ttml"
+    const val dfxpFileType = "dfxp"
+
     @JvmField
     val docFileType = arrayOf("doc", "docx")
 
@@ -48,6 +57,21 @@ object FileMimeType {
     )
 
     @JvmField
+    val subtitleTextFileType = arrayOf(
+        srtFileType, vttFileType, assFileType, ssaFileType, subFileType,
+        "sbv", "smi", "sami", ttmlFileType, dfxpFileType, lrcFileType,
+        "scc", "mpl2"
+    )
+
+    // Subtitle bitmap tidak bisa dibaca sebagai teks, jadi hanya ditandai
+    // dan tidak dimasukkan ke daftar file yang bisa diedit.
+    @JvmField
+    val subtitleBinaryFileType = arrayOf("idx", "sup")
+
+    @JvmField
+    val subtitleFileType = subtitleTextFileType + subtitleBinaryFileType
+
+    @JvmField
     val codeFileType = arrayOf(
         javaFileType, "xml", "py", "css", kotlinFileType, "cs", "xml", jsonFileType, "html",
         "js", "ts", "php", "rb", "pl", "sh", "cpp", "c", "h", "swift", "go", "rs",
@@ -58,7 +82,7 @@ object FileMimeType {
     val editableFileType = arrayOf(
         "txt", "text", "log", "dsc", "apt", "rtf", "rtx", "md",
         "csv", "tsv", "ini", "conf", "cfg", "nfo", "json", "xml"
-    )
+    ) + subtitleTextFileType
 
     @JvmField
     val imageFileType = arrayOf(

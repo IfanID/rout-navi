@@ -24,13 +24,21 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.raival.compose.file.explorer.App.Companion.globalClass
 import com.raival.compose.file.explorer.R
 import com.raival.compose.file.explorer.common.ui.SafeSurface
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.assFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.dfxpFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.javaFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.jsonFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.kotlinFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.lrcFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.srtFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.ssaFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.ttmlFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.vttFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.xmlFileType
 import com.raival.compose.file.explorer.screen.textEditor.holder.SymbolHolder
 import com.raival.compose.file.explorer.screen.textEditor.language.json.JsonCodeLanguage
 import com.raival.compose.file.explorer.screen.textEditor.language.kotlin.KotlinCodeLanguage
+import com.raival.compose.file.explorer.screen.textEditor.language.subtitle.SubtitleCodeLanguage
 import com.raival.compose.file.explorer.screen.textEditor.language.xml.XmlCodeLanguage
 import com.raival.compose.file.explorer.screen.textEditor.ui.BottomBarView
 import com.raival.compose.file.explorer.screen.textEditor.ui.InfoBar
@@ -57,6 +65,13 @@ class TextViewerActivity : ViewerActivity() {
         uid: String
     ): ViewerInstance {
         return TextViewerInstance(uri, uid)
+    }
+
+    /** Grammar subtitle bisa gagal dimuat; editor lalu memakai teks polos. */
+    private fun applySubtitleLanguage(codeEditor: CodeEditor, scopeName: String) {
+        codeEditor.setEditorLanguage(
+            SubtitleCodeLanguage.create(scopeName) ?: EmptyLanguage()
+        )
     }
 
     override fun onReady(instance: ViewerInstance) {
@@ -131,23 +146,49 @@ class TextViewerActivity : ViewerActivity() {
                                         textViewerInstance.canRedo = canRedo()
                                     }
                                 }
-                                val name = textViewerInstance.uriContent.name
-                                if (name != null) {
-                                    if (name.endsWith(javaFileType)) {
+                                // Bahasa dipilih dari ekstensi agar berkas subtitle ikut terdeteksi.
+                                when (textViewerInstance.uriContent.extension) {
+                                    javaFileType -> {
                                         codeEditor.setEditorLanguage(JavaLanguage())
                                         textViewerInstance.changeFontStyle(codeEditor)
-                                    } else if (name.endsWith(kotlinFileType)) {
+                                    }
+
+                                    kotlinFileType -> {
                                         codeEditor.setEditorLanguage(KotlinCodeLanguage())
                                         textViewerInstance.changeFontStyle(codeEditor)
-                                    } else if (name.endsWith(jsonFileType)) {
+                                    }
+
+                                    jsonFileType -> {
                                         codeEditor.setEditorLanguage(JsonCodeLanguage())
                                         textViewerInstance.changeFontStyle(codeEditor)
-                                    } else if (name.endsWith(xmlFileType)) {
+                                    }
+
+                                    xmlFileType, ttmlFileType, dfxpFileType -> {
                                         codeEditor.setEditorLanguage(XmlCodeLanguage())
                                         textViewerInstance.changeFontStyle(codeEditor)
-                                    } else {
-                                        codeEditor.setEditorLanguage(EmptyLanguage())
                                     }
+
+                                    srtFileType -> {
+                                        applySubtitleLanguage(codeEditor, SubtitleCodeLanguage.SCOPE_SRT)
+                                        textViewerInstance.changeFontStyle(codeEditor)
+                                    }
+
+                                    vttFileType -> {
+                                        applySubtitleLanguage(codeEditor, SubtitleCodeLanguage.SCOPE_VTT)
+                                        textViewerInstance.changeFontStyle(codeEditor)
+                                    }
+
+                                    assFileType, ssaFileType -> {
+                                        applySubtitleLanguage(codeEditor, SubtitleCodeLanguage.SCOPE_ASS)
+                                        textViewerInstance.changeFontStyle(codeEditor)
+                                    }
+
+                                    lrcFileType -> {
+                                        applySubtitleLanguage(codeEditor, SubtitleCodeLanguage.SCOPE_LRC)
+                                        textViewerInstance.changeFontStyle(codeEditor)
+                                    }
+
+                                    else -> codeEditor.setEditorLanguage(EmptyLanguage())
                                 }
                             }
 

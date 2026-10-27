@@ -8,10 +8,12 @@ import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.BuildCircle
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Slideshow
+import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Videocam
@@ -50,6 +52,8 @@ import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.pptFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.prismPrefsFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.sqlFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.subtitleBinaryFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.subtitleFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.vectorFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.videoFileType
 
@@ -86,6 +90,11 @@ private fun getContentIcon(content: ContentHolder): FileContentIcon {
     if (fontFileType.contains(extension)) return FileContentIcon(Icons.Default.TextFields)
     if (vectorFileType.contains(extension)) return FileContentIcon(PrismIcons.Vector)
     if (audioFileType.contains(extension)) return FileContentIcon(Icons.Default.Audiotrack)
+    // Subtitle bitmap ditandai terpisah karena isinya tidak bisa dibuka di editor.
+    if (subtitleBinaryFileType.contains(extension)) return FileContentIcon(
+        Icons.Default.ClosedCaption
+    )
+    if (subtitleFileType.contains(extension)) return FileContentIcon(Icons.Default.Subtitles)
     if (codeFileType.contains(extension)) return FileContentIcon(PrismIcons.Code)
     if (editableFileType.contains(extension)) return FileContentIcon(Icons.Default.Description)
     if (archiveFileType.contains(extension)) return FileContentIcon(Icons.Default.Archive)

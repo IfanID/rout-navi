@@ -12,6 +12,10 @@ object Language {
     const val LANGUAGE_KOTLIN = 2
     const val LANGUAGE_JSON = 3
     const val LANGUAGE_XML = 4
+    const val LANGUAGE_SRT = 5
+    const val LANGUAGE_VTT = 6
+    const val LANGUAGE_ASS = 7
+    const val LANGUAGE_LRC = 8
 }
 
 object StorageDeviceType {
