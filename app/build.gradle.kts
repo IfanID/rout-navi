@@ -111,4 +111,7 @@ dependencies {
     implementation(libs.junrar)
     implementation(libs.xz)
     implementation(libs.slf4j.nop)
+    // Root file provider berbasis NIO di proses root (seperti MaterialFiles).
+    implementation(libs.libsu.service)
+    implementation(libs.libsu.nio)
 }

@@ -18,7 +18,6 @@ import androidx.core.content.FileProvider.getUriForFile
 import com.raival.compose.file.explorer.App.Companion.globalClass
 import com.raival.compose.file.explorer.App.Companion.logger
 import com.raival.compose.file.explorer.R
-import com.raival.compose.file.explorer.common.emptyString
 import com.raival.compose.file.explorer.common.getIndexIf
 import com.raival.compose.file.explorer.common.getMimeType
 import com.raival.compose.file.explorer.common.isNot
@@ -30,11 +29,13 @@ import com.raival.compose.file.explorer.screen.main.tab.files.archive.ArchiveFor
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.ArchiveFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.ContentHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
+import com.raival.compose.file.explorer.screen.main.tab.files.holder.RootLocalFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.ZipFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileListCategory
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.anyFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.apkFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.main.tab.files.provider.StorageProvider
 import com.raival.compose.file.explorer.screen.main.tab.files.state.BottomOptionsBarState
 import com.raival.compose.file.explorer.screen.main.tab.files.state.DialogsState
@@ -220,12 +221,22 @@ class FilesTab(
         if (unselectAnySelectedFiles()) {
             return true
         } else if (handleBackGesture) {
+            // Ambil dari breadcrumb di thread utama, lalu fallback ke parent
+            // holder di dalam coroutine bila jejak belum tersedia.
+            val trailParent = currentPathSegments.getOrNull(
+                currentPathSegments.lastIndex - 1
+            )
+
             scope.launch {
-                highlightedFiles.apply {
-                    clear()
-                    add(activeFolder.uniquePath)
+                val parent = trailParent ?: activeFolder.getParent()
+
+                if (parent != null) {
+                    highlightedFiles.apply {
+                        clear()
+                        add(activeFolder.uniquePath)
+                    }
+                    openFolderImpl(parent)
                 }
-                openFolderImpl(activeFolder.getParent()!!)
             }
 
             return true
@@ -324,13 +335,14 @@ class FilesTab(
             )
         }
 
-        // Check if the back gesture can be handled
-        handleBackGesture = runBlocking {
-            selectedFiles.isNotEmpty() || (activeFolder.hasParent() && !shouldNavigateToParentTab())
-        }
-
-        // Update the path list
+        // Update path list dulu karena back memakai daftar ini sebagai trail.
         updatePathList()
+
+        // Check if the back gesture can be handled
+        handleBackGesture = selectedFiles.isNotEmpty() || runBlocking {
+            !shouldNavigateToParentTab() &&
+                    (currentPathSegments.size > 1 || activeFolder.hasParent())
+        }
 
         // Update the zipSourceTimestamp if the active folder is inside an archive
         if (activeFolder is ArchiveFileHolder) {
@@ -427,18 +439,27 @@ class FilesTab(
                 return true
             }
         } else if (activeFolder is LocalFileHolder) {
-            val newContent =
-                (activeFolder as LocalFileHolder).file.listFiles()?.toCollection(arrayListOf())
-                    ?.apply {
-                        if (!globalClass.preferencesManager.showHiddenFiles) {
-                            removeIf { it.name.startsWith(".") }
+            val localFolder = activeFolder as LocalFileHolder
+
+            // Folder sistem dibaca lewat root, jadi File.listFiles() di sini
+            // bisa memberi jumlah parsial dan memicu reload terus-menerus.
+            if (localFolder !is RootLocalFileHolder &&
+                !RootShell.prefersRootListing(localFolder.file)
+            ) {
+                val newContent =
+                    localFolder.file.listFiles()?.toCollection(arrayListOf())
+                        ?.apply {
+                            if (!globalClass.preferencesManager.showHiddenFiles) {
+                                removeIf { it.name.startsWith(".") }
+                            }
                         }
-                    }
-            // Check if the content size has changed
-            if (newContent != null && newContent.size != activeFolderContent.size) {
-                reloadFiles()
-                return true
+                // Check if the content size has changed
+                if (newContent != null && newContent.size != activeFolderContent.size) {
+                    reloadFiles()
+                    return true
+                }
             }
+
             // Check each file to see if the source has changed
             if (activeFolderContent.any { (it as LocalFileHolder).hasSourceChanged() }) {
                 reloadFiles()
@@ -616,13 +637,19 @@ class FilesTab(
             runBlocking { it.getParent() }
         }
 
-        // Filter those that accessible, reverse the list
+        // Filter yang masih valid saja. Jangan memakai canRead di sini:
+        // folder seperti /data bisa saja tidak bisa dibaca langsung oleh app,
+        // tetapi tetap bagian dari jejak navigasi (seperti TrailData).
         val newPathSegments =
-            paths.filter { it.canRead && runBlocking { it.isValid() } }.toList().reversed()
+            paths.filter { runBlocking { it.isValid() } }.toList().reversed()
 
-        if (!currentPathSegments.joinToString(emptyString) { it.displayName }.startsWith(
-                newPathSegments.joinToString(emptyString) { it.displayName })
-        ) {
+        // Bandingkan berdasarkan path, bukan hanya awalan nama. Saat kembali
+        // ke folder induk, daftar lama bisa lebih panjang sehingga breadcrumb
+        // harus benar-benar dipotong.
+        val oldPaths = currentPathSegments.joinToString("\u0000") { it.uniquePath }
+        val newPaths = newPathSegments.joinToString("\u0000") { it.uniquePath }
+
+        if (oldPaths != newPaths) {
             // Update the state to reflect the new path
             withContext(Dispatchers.Main) {
                 currentPathSegments = newPathSegments

@@ -471,11 +471,20 @@ class TextEditorManager {
         scope.launch {
             isReading = true
 
-            val text = activeFile.file.inputStream().use {
-                it.bufferedReader().use { reader ->
+            val text = activeFile.openInputStream()?.use { input ->
+                input.bufferedReader().use { reader ->
                     reader.readText()
                 }
             }
+
+            if (text == null) {
+                isReading = false
+                withContext(Dispatchers.Main) {
+                    globalClass.showMsg(R.string.failed_to_open_this_file)
+                }
+                return@launch
+            }
+
             val fileInstance = getFileInstance(bringToTop = true)
 
             if (fileInstance isNot null) {

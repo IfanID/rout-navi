@@ -26,6 +26,7 @@ import com.raival.compose.file.explorer.common.FileExplorerLogger
 import com.raival.compose.file.explorer.screen.main.MainActivityManager
 import com.raival.compose.file.explorer.screen.main.tab.files.coil.DocumentFileMapper
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.main.tab.files.search.SearchManager
 import com.raival.compose.file.explorer.screen.main.tab.files.task.TaskManager
 import com.raival.compose.file.explorer.screen.main.tab.files.archive.ArchiveManager
@@ -104,6 +105,10 @@ class App : Application(), coil3.SingletonImageLoader.Factory {
         setupGlobalExceptionHandler()
 
         appContext = this
+
+        // Deteksi akses root saat aplikasi dibuka supaya prompt Magisk muncul
+        // lebih awal dan hasilnya dipakai ulang oleh folder terlindung.
+        applicationScope.launch { RootShell.isAvailable() }
 
         cleanOnExitDir()
     }

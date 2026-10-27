@@ -4,6 +4,7 @@ import com.raival.compose.file.explorer.App.Companion.globalClass
 import com.raival.compose.file.explorer.R
 import com.raival.compose.file.explorer.common.emptyString
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.ContentCount
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import java.io.File
 
 class RootFileHolder : ContentHolder() {
@@ -11,12 +12,11 @@ class RootFileHolder : ContentHolder() {
         const val rootDir = "/"
     }
 
-    val virtualRootContent = listOf(
-        "/acct", "/apex", "/bin", "/cache", "/config", "/data", "/dev", "/etc",
-        "/mnt", "/odm", "/oem", "/proc", "/product", "/sbin", "/sdcard",
-        "/storage", "/system", "/vendor"
-    )
-
+    /**
+     * Root tidak memakai daftar folder hardcode. Isi "/" dibaca dinamis
+     * seperti MaterialFiles, lalu diurutkan berdasarkan nama oleh
+     * listSortedContent (nama menaik, folder dulu).
+     */
     var contentsCount = ContentCount()
     val content = arrayListOf<LocalFileHolder>()
 
@@ -31,19 +31,23 @@ class RootFileHolder : ContentHolder() {
     override val canWrite = false
 
     override suspend fun listContent(): ArrayList<out ContentHolder> {
-        val content = ArrayList<LocalFileHolder>()
+        // Root dibaca dinamis seperti MaterialFiles: semua entri "/" diambil
+        // dari provider root, bukan dari daftar folder hardcode.
+        val entries: List<LocalFileHolder> = RootShell.list(File(rootDir))
+            ?: File(rootDir).listFiles()
+                ?.map { RootLocalFileHolder(it, it.isDirectory, it.length(), it.lastModified()) }
+                ?: emptyList()
 
-        virtualRootContent.forEach { item ->
-            File(item).let { file ->
-                if (file.exists()) {
-                    content.add(LocalFileHolder(file))
-                }
-            }
-        }
+        content.clear()
+        content.addAll(entries)
 
-        contentsCount = ContentCount(folders = content.size)
+        val fileCount = content.count { !it.isFolder }
+        contentsCount = ContentCount(
+            files = fileCount,
+            folders = content.size - fileCount
+        )
 
-        return content
+        return ArrayList(content)
     }
 
     override suspend fun getParent() = null

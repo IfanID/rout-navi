@@ -62,7 +62,8 @@ object StorageProvider {
     }
 
     fun getRoot(context: Context): StorageDevice {
-        val externalStorageDir = Environment.getRootDirectory()
+        // Ukuran root sebenarnya, bukan partisi /system seperti sebelumnya.
+        val externalStorageDir = File(RootFileHolder.rootDir)
 
         val externalStatFs = StatFs(externalStorageDir.absolutePath)
 

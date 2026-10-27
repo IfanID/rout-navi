@@ -25,14 +25,16 @@ import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.prismPrefsFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.subFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.subtitleBinaryFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.viewer.audio.AudioPlayerActivity
 import com.raival.compose.file.explorer.screen.viewer.image.ImageViewerActivity
 import com.raival.compose.file.explorer.screen.viewer.pdf.PdfViewerActivity
 import com.raival.compose.file.explorer.screen.viewer.video.VideoPlayerActivity
 import kotlinx.coroutines.runBlocking
 import java.io.File
+import java.io.InputStream
 
-class LocalFileHolder(val file: File) : ContentHolder() {
+open class LocalFileHolder(val file: File) : ContentHolder() {
     private var folderCount = 0
     private var fileCount = 0
     private var timestamp = -1L
@@ -93,12 +95,34 @@ class LocalFileHolder(val file: File) : ContentHolder() {
         folderCount = 0
         fileCount = 0
 
-        return arrayListOf<LocalFileHolder>().apply {
-            file.listFiles()?.forEach { add(LocalFileHolder(it)) }
-        }
+        val children = listChildren() ?: return arrayListOf()
+
+        // Hitung di sini supaya getContentCount() tidak perlu membaca ulang.
+        children.forEach { if (it.isFolder) folderCount++ else fileCount++ }
+
+        return ArrayList(children)
     }
 
-    override suspend fun getParent(): LocalFileHolder? =
+    /**
+     * Folder sistem seperti /data hanya menampilkan sebagian isi bagi proses
+     * aplikasi biasa. Kalau root tersedia, daftar dari shell root dipakai agar
+     * semua entri muncul, bukan hanya folder yang kebetulan bisa dibaca.
+     */
+    protected open suspend fun listChildren(): List<LocalFileHolder>? {
+        if (!isFolder) return null
+
+        val direct = file.listFiles()
+
+        if (direct != null && !RootShell.prefersRootListing(file)) {
+            return direct.map { LocalFileHolder(it) }
+        }
+
+        RootShell.list(file)?.let { return it }
+
+        return direct?.map { LocalFileHolder(it) }
+    }
+
+    override suspend fun getParent(): ContentHolder? =
         file.parentFile?.let { LocalFileHolder(it) }
 
     override fun open(
@@ -154,9 +178,15 @@ class LocalFileHolder(val file: File) : ContentHolder() {
 
     override suspend fun getContentCount(): ContentCount {
         if (fileCount == 0 && folderCount == 0) {
-            file.listFiles()?.let { list ->
-                list.forEach {
-                    if (it.isFile) fileCount++ else folderCount++
+            if (RootShell.prefersRootListing(file)) {
+                // Folder sistem: hitung lewat jalur root yang sama dengan
+                // listContent agar angkanya tidak parsial.
+                listContent()
+            } else {
+                file.listFiles()?.let { list ->
+                    list.forEach {
+                        if (it.isFile) fileCount++ else folderCount++
+                    }
                 }
             }
         }
@@ -262,6 +292,13 @@ class LocalFileHolder(val file: File) : ContentHolder() {
     }
 
     fun readText() = file.readText()
+
+    /** Implementasi default memakai file lokal; holder root akan override. */
+    open suspend fun openInputStream(): InputStream? = try {
+        file.inputStream()
+    } catch (e: Exception) {
+        null
+    }
 
     private fun handleSupportedFiles(skipSupportedExtensions: Boolean, context: Context): Boolean {
         if (prismPrefsFileType == extension) {

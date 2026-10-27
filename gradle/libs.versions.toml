@@ -29,6 +29,7 @@ commonsCompress = "1.28.0"
 junrar = "8.1.2"
 xz = "1.12"
 slf4j = "2.0.17"
+libsu = "6.0.0"
 zoomable = "2.8.1"
 junit = "1.3.0"
 espressoCore = "3.7.0"
@@ -79,6 +80,8 @@ commons-compress = { module = "org.apache.commons:commons-compress", version.ref
 junrar = { module = "com.github.junrar:junrar", version.ref = "junrar" }
 xz = { module = "org.tukaani:xz", version.ref = "xz" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
+libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsu" }
+libsu-nio = { module = "com.github.topjohnwu.libsu:nio", version.ref = "libsu" }
 zoomable = { module = "net.engawapg.lib:zoomable", version.ref = "zoomable" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junit" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

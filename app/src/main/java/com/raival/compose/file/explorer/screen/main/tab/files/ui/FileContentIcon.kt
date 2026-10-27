@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
@@ -35,6 +37,7 @@ import com.raival.compose.file.explorer.common.icons.PrismIcons
 import com.raival.compose.file.explorer.common.icons.Sql
 import com.raival.compose.file.explorer.common.icons.Vector
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.ContentHolder
+import com.raival.compose.file.explorer.screen.main.tab.files.holder.RootLocalFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.apkFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.archiveFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.audioFileType
@@ -65,6 +68,15 @@ data class FileContentIcon(
 
 @Composable
 private fun getContentIcon(content: ContentHolder): FileContentIcon {
+    // Symlink ditampilkan sebagai link, bukan folder/file biasa.
+    if (content is RootLocalFileHolder && content.isSymlink) {
+        return FileContentIcon(
+            icon = if (content.isBrokenSymlink) Icons.Rounded.LinkOff else Icons.Rounded.Link,
+            backgroundColor = colorScheme.surfaceVariant,
+            iconColor = colorScheme.onSurfaceVariant
+        )
+    }
+
     if (content.isFolder) return FileContentIcon(
         icon = Icons.Rounded.Folder,
         backgroundColor = colorScheme.surfaceVariant,
