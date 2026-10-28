@@ -29,6 +29,9 @@ import kotlinx.coroutines.runBlocking
 class PreferencesManager {
     val singleChoiceDialog = SingleChoiceDialog()
 
+    /** Kunci markah dipakai juga oleh penulisan langsung ke DataStore. */
+    private val bookmarksKey = stringSetPreferencesKey("bookmarks")
+
     //---------- Appearance -------------//
     var theme by prefMutableState(
         keyName = "theme",
@@ -140,6 +143,27 @@ class PreferencesManager {
         defaultValue = emptySet(),
         getPreferencesKey = { stringSetPreferencesKey(it) }
     )
+
+    /**
+     * Menyimpan markah langsung ke DataStore lalu menyelaraskan state sesi.
+     *
+     * Penulisan lewat state Compose saja tidak cukup: nilainya bisa kembali ke
+     * versi lama saat proses aplikasi berakhir sebelum DataStore selesai
+     * ditulis. Fungsi ini mengembalikan isi yang benar-benar tersimpan sehingga
+     * pemanggil bisa memverifikasinya.
+     */
+    suspend fun saveBookmarks(value: Set<String>): Set<String> {
+        globalClass.prefDataStore.edit { it[bookmarksKey] = value }
+        bookmarks = value
+        return globalClass.prefDataStore.data.first()[bookmarksKey] ?: emptySet()
+    }
+
+    /** Membaca markah dari DataStore, bukan dari state sesi yang mungkin basi. */
+    suspend fun loadBookmarks(): Set<String> {
+        val stored = globalClass.prefDataStore.data.first()[bookmarksKey] ?: emptySet()
+        if (stored != bookmarks) bookmarks = stored
+        return stored
+    }
 
     var pinnedFiles by prefMutableState(
         keyName = "pinnedFiles",

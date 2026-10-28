@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,14 +39,15 @@ import com.kevinnzou.compose.swipebox.SwipeDirection
 import com.kevinnzou.compose.swipebox.widget.SwipeIcon
 import com.raival.compose.file.explorer.App.Companion.globalClass
 import com.raival.compose.file.explorer.R
-import com.raival.compose.file.explorer.common.isNot
 import com.raival.compose.file.explorer.common.trimToLastTwoSegments
 import com.raival.compose.file.explorer.common.ui.BottomSheetDialog
 import com.raival.compose.file.explorer.common.ui.Space
 import com.raival.compose.file.explorer.screen.main.tab.files.FilesTab
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.FileItemRow
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -58,20 +60,27 @@ fun BookmarksDialog(
 ) {
     if (show) {
         val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         val bookmarks = remember {
             mutableStateListOf<LocalFileHolder>()
         }
 
         LaunchedEffect(Unit) {
             withContext(Dispatchers.IO) {
-                val originalList = globalClass.preferencesManager.bookmarks
-                bookmarks.addAll(
-                    originalList.map { LocalFileHolder(File(it)) }.filter { it.isValid() }
-                )
+                val stored = globalClass.preferencesManager.loadBookmarks()
+                val holders = stored.map { RootShell.holderFor(File(it)) }
+                // Path Root tidak bisa dicek lewat java.io.File, jadi verifikasi
+                // memakai RootShell agar markah Root tidak ikut terhapus.
+                val valid = holders.filter { holder ->
+                    RootShell.exists(holder.file) ?: holder.isValid()
+                }
 
-                if (bookmarks.size isNot originalList.size) {
-                    globalClass.preferencesManager.bookmarks =
-                        bookmarks.map { it.uniquePath }.toSet()
+                bookmarks.addAll(valid)
+
+                if (valid.size != stored.size) {
+                    globalClass.preferencesManager.saveBookmarks(
+                        valid.map { it.uniquePath }.toSet()
+                    )
                 }
             }
         }
@@ -123,7 +132,14 @@ fun BookmarksDialog(
                                     weight = 1f,
                                     iconSize = 20.dp
                                 ) {
-                                    globalClass.preferencesManager.bookmarks -= item.uniquePath
+                                    scope.launch {
+                                        bookmarks.removeAll {
+                                            it.uniquePath == item.uniquePath
+                                        }
+                                        globalClass.preferencesManager.saveBookmarks(
+                                            bookmarks.map { it.uniquePath }.toSet()
+                                        )
+                                    }
                                 }
                             }
                         ) { _, _, _ ->

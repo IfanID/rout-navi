@@ -507,10 +507,25 @@ class FilesTab(
         return false
     }
 
-    private fun validateBookmarks() {
-        globalClass.preferencesManager.bookmarks = globalClass.preferencesManager.bookmarks.filter {
-            File(it).exists()
+    private suspend fun validateBookmarks() {
+        val current = globalClass.preferencesManager.loadBookmarks()
+
+        val invalid = current.filter { path ->
+            val file = File(path)
+            val exists = if (RootShell.prefersRootListing(file)) {
+                RootShell.exists(file)
+            } else {
+                file.exists()
+            }
+            exists == false
         }.toSet()
+
+        if (invalid.isNotEmpty()) {
+            // Baca ulang sebelum menulis agar markah yang baru ditambahkan
+            // saat validasi berjalan tidak ikut terhapus.
+            val latest = globalClass.preferencesManager.loadBookmarks()
+            globalClass.preferencesManager.saveBookmarks(latest - invalid)
+        }
     }
 
     private fun validateSearchResult() {

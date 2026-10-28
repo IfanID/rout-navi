@@ -75,17 +75,65 @@ object FileMimeType {
     val subtitleFileType = subtitleTextFileType + subtitleBinaryFileType
 
     @JvmField
+    val shellFileType = arrayOf(
+        "sh", "zsh", "bash", "ksh", "fish", "csh", "tcsh", "ash", "dash",
+        "shell", "rc", "zshrc", "bashrc", "profile", "zsh_history", "bash_history",
+        "zsh-theme"
+    )
+
+    // Konfigurasi teks umum, termasuk termux.properties.
+    @JvmField
+    val configFileType = arrayOf(
+        "properties", "conf", "cfg", "ini", "env"
+    )
+
+    // Kunci publik dan sertifikat teks (SSH/TLS).
+    @JvmField
+    val keyFileType = arrayOf(
+        "pub", "pem", "crt", "cer", "ssh_config", "sshd_config"
+    )
+
+    // File konfigurasi shell yang tidak bisa dideteksi dari ekstensi saja.
+    private val textConfigNames = setOf(
+        ".zshrc", ".zshenv", ".zprofile", ".zlogin", ".zlogout",
+        ".bashrc", ".bash_profile", ".bash_login", ".bash_logout", ".profile",
+        ".zsh_history", ".bash_history", ".shell.pre-oh-my-zsh",
+        ".zshrc.pre-oh-my-zsh", ".bashrc.pre-oh-my-zsh",
+        ".inputrc", ".vimrc", ".nanorc", ".gitconfig", ".editorconfig",
+        ".tmux.conf", ".screenrc",
+        "authorized_keys", "known_hosts", "ssh_config", "sshd_config"
+    )
+
+    /**
+     * Mendeteksi script/konfigurasi shell dari nama file maupun ekstensi.
+     * Dotfile seperti .zshrc tidak punya ekstensi yang dikenal MimeTypeMap.
+     */
+    fun isTextConfigFile(name: String, extension: String): Boolean {
+        val lowerName = name.lowercase()
+        val lowerExtension = extension.lowercase()
+
+        if (lowerExtension in shellFileType) return true
+        if (lowerExtension in configFileType) return true
+        if (lowerExtension in keyFileType) return true
+        if (lowerName in textConfigNames) return true
+        if (lowerName.startsWith(".zcompdump") && !lowerName.endsWith(".zwc")) return true
+
+        return lowerName.startsWith(".zshrc.pre-oh-my-zsh") ||
+                lowerName.startsWith(".bashrc.pre-oh-my-zsh")
+    }
+
+    @JvmField
     val codeFileType = arrayOf(
         javaFileType, "xml", "py", "css", kotlinFileType, "cs", "xml", jsonFileType, "html",
         "js", "ts", "php", "rb", "pl", "sh", "cpp", "c", "h", "swift", "go", "rs",
         "scala", "sql", "r", "md", "ini", "yaml", "yml"
-    )
+    ) + shellFileType + configFileType + keyFileType
 
     @JvmField
     val editableFileType = arrayOf(
         "txt", "text", "log", "dsc", "apt", "rtf", "rtx", "md",
         "csv", "tsv", "ini", "conf", "cfg", "nfo", "json", "xml"
-    ) + subtitleTextFileType
+    ) + subtitleTextFileType + configFileType + keyFileType
 
     @JvmField
     val imageFileType = arrayOf(

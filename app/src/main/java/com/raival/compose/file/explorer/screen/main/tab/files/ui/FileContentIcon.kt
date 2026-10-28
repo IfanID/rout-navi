@@ -48,6 +48,7 @@ import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.fontFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.imageFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.isoFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.isTextConfigFile
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.javaFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.kotlinFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.markdownFileType
@@ -75,6 +76,10 @@ private fun getContentIcon(content: ContentHolder): FileContentIcon {
             backgroundColor = colorScheme.surfaceVariant,
             iconColor = colorScheme.onSurfaceVariant
         )
+    }
+
+    if (isTextConfigFile(content.displayName, content.extension)) {
+        return FileContentIcon(PrismIcons.Code)
     }
 
     if (content.isFolder) return FileContentIcon(

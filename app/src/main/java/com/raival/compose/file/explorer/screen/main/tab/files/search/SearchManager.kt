@@ -324,6 +324,8 @@ class SearchManager {
 
     private fun isEditableFile(file: ContentHolder): Boolean {
         val extension = file.extension
-        return extension in editableExtensions || extension in codeExtensions
+        return FileMimeType.isTextConfigFile(file.displayName, extension) ||
+                extension in editableExtensions ||
+                extension in codeExtensions
     }
 }

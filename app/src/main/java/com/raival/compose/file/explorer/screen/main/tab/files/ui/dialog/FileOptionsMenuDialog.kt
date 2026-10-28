@@ -53,6 +53,7 @@ import com.raival.compose.file.explorer.common.ui.Space
 import com.raival.compose.file.explorer.screen.main.tab.files.FilesTab
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.ArchiveFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
+import com.raival.compose.file.explorer.screen.main.tab.files.holder.RootFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.DefaultOpeningMethods
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.apkBundleFileType
@@ -64,6 +65,7 @@ import com.raival.compose.file.explorer.screen.main.tab.files.task.CopyTask
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.FileIcon
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.ItemRow
 import java.io.File
+import kotlinx.coroutines.runBlocking
 
 @Composable
 fun FileOptionsMenuDialog(
@@ -92,6 +94,11 @@ fun FileOptionsMenuDialog(
                 return@forEach
             }
         }
+
+        val canBookmark = tab.activeFolder is LocalFileHolder ||
+                tab.activeFolder is RootFileHolder ||
+                (tab.activeFolder is VirtualFileHolder &&
+                        (tab.activeFolder as VirtualFileHolder).type isNot VirtualFileHolder.BOOKMARKS)
 
         BottomSheetDialog(onDismissRequest = { tab.toggleFileOptionsMenu(null) }) {
             var details by remember {
@@ -244,21 +251,25 @@ fun FileOptionsMenuDialog(
                 ) {
                     onDismissRequest()
                     val toRemove = targetFiles.map { it.uniquePath }
-                    val newBookmarks = globalClass.preferencesManager.bookmarks.filter {
-                        !toRemove.contains(it)
+                    val remaining = runBlocking {
+                        globalClass.preferencesManager.loadBookmarks()
+                    } - toRemove.toSet()
+                    runBlocking {
+                        globalClass.preferencesManager.saveBookmarks(remaining)
                     }
-                    globalClass.preferencesManager.bookmarks = newBookmarks.toSet()
                     tab.unselectAllFiles()
                     tab.reloadFiles()
                 }
             }
 
-            if (tab.activeFolder is LocalFileHolder ||
-                (tab.activeFolder is VirtualFileHolder && (tab.activeFolder as VirtualFileHolder).type isNot VirtualFileHolder.BOOKMARKS)
-            ) {
+            if (canBookmark) {
                 FileOption(Icons.Rounded.BookmarkAdd, stringResource(R.string.add_to_bookmarks)) {
                     onDismissRequest()
-                    globalClass.preferencesManager.bookmarks += targetFiles.map { it.uniquePath }
+                    val addedPaths = targetFiles.map { it.uniquePath }
+                    val before = runBlocking { globalClass.preferencesManager.loadBookmarks() }
+                    runBlocking {
+                        globalClass.preferencesManager.saveBookmarks(before + addedPaths)
+                    }
                     globalClass.showMsg(R.string.added_to_bookmarks)
                     tab.unselectAllFiles()
                 }

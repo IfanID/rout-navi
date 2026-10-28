@@ -5,7 +5,6 @@ import com.raival.compose.file.explorer.rootfs.RootFsClient
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.RootLocalFileHolder
 import com.topjohnwu.superuser.Shell
-import android.os.Environment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -41,12 +40,8 @@ object RootShell {
             val ok = RootFsClient.isRootAvailable() ||
                     run("id")?.contains("uid=0") == true
             granted = ok
-            if (ok) {
-                logInfo("akses root aktif")
-                writeDebug("root aktif")
-            } else {
-                logWarning("akses root tidak tersedia")
-                writeDebug("root tidak tersedia: ${RootFsClient.lastError}")
+            if (!ok) {
+                logWarning("akses root tidak tersedia: ${RootFsClient.lastError}")
             }
             ok
         }
@@ -89,25 +84,17 @@ object RootShell {
      * sehingga pemanggil bisa membedakannya dari folder yang memang kosong.
      */
     suspend fun list(directory: File): ArrayList<LocalFileHolder>? {
-        if (!isAvailable()) {
-            writeDebug("list ${directory.absolutePath}: root tidak tersedia")
-            return null
-        }
-
-        val path = directory.absolutePath
+        if (!isAvailable()) return null
 
         // Jalur utama: root service membaca direktori dengan NIO di proses root.
         val nioEntries = RootFsClient.list(directory)
-        writeDebug("NIO $path: ${nioEntries?.size ?: "null"} (${RootFsClient.lastError})")
 
         if (nioEntries != null) {
             // Bandingkan dengan shell root. Kalau NIO mengembalikan daftar parsial,
             // shell yang lebih lengkap dipakai supaya isi folder tidak hilang.
             val shellEntries = listUsingShell(directory)
-            writeDebug("SHELL $path: ${shellEntries?.size ?: "null"}")
 
             if (shellEntries != null && shellEntries.size > nioEntries.size) {
-                writeDebug("pakai SHELL $path karena lebih lengkap")
                 return shellEntries
             }
 
@@ -138,9 +125,7 @@ object RootShell {
             }
         }
 
-        return listUsingShell(directory).also {
-            writeDebug("SHELL fallback $path: ${it?.size ?: "null"}")
-        }
+        return listUsingShell(directory)
     }
 
     /** Fallback lama: daftar lewat `ls` dan metadata lewat `stat`. */
@@ -161,8 +146,6 @@ object RootShell {
         val entries = raw.lines().filter { it.isNotEmpty() }
         if (entries.isEmpty()) return arrayListOf()
 
-        logInfo("$path: ${entries.size} entri (shell)")
-
         val metadata = readMetadata(path, entries.map { it.removeSuffix("/") })
 
         return entries.mapTo(ArrayList<LocalFileHolder>(entries.size)) { entry ->
@@ -181,15 +164,35 @@ object RootShell {
         }
     }
 
-    private fun writeDebug(message: String) {
-        runCatching {
-            val file = File(Environment.getExternalStorageDirectory(), "PrismRootDebug.txt")
-            if (file.exists() && file.length() > 200_000L) {
-                file.writeText("")
-            }
-            file.appendText("${System.currentTimeMillis()} $message\n")
-        }
+    /**
+     * Membuat holder dengan metadata root untuk path yang disimpan sebagai
+     * markah/sematan. Tanpa ini folder Root dianggap file biasa.
+     */
+    suspend fun holderFor(path: File): LocalFileHolder {
+        if (!prefersRootListing(path)) return LocalFileHolder(path)
+
+        val stat = RootFsClient.stat(path) ?: return LocalFileHolder(path)
+
+        return RootLocalFileHolder(
+            file = path,
+            folder = stat.isDirectory,
+            length = stat.size,
+            modified = stat.modified,
+            isSymlink = stat.isSymlink,
+            isBrokenSymlink = stat.isBrokenSymlink,
+        )
     }
+
+    /**
+     * Cek keberadaan path. Null berarti status root tidak bisa dipastikan;
+     * pemanggil sebaiknya tidak menghapus markah dalam kondisi itu.
+     */
+    suspend fun exists(path: File): Boolean? =
+        if (prefersRootListing(path)) {
+            RootFsClient.exists(path)
+        } else {
+            path.exists()
+        }
 
     /**
      * Membaca ukuran dan waktu modifikasi dalam satu panggilan `stat`.
@@ -312,10 +315,6 @@ object RootShell {
                 null
             }
         }
-
-    private fun logInfo(message: String) {
-        runCatching { globalClass.logger.logInfo("RootShell: $message") }
-    }
 
     private fun logWarning(message: String) {
         runCatching { globalClass.logger.logWarning("RootShell: $message") }

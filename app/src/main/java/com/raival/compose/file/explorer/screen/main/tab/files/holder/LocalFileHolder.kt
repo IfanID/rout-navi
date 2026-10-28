@@ -62,7 +62,13 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
 
     override val canWrite: Boolean by lazy { file.canWrite() }
 
-    val mimeType by lazy { file.mimeType ?: anyFileType }
+    val mimeType by lazy {
+        if (FileMimeType.isTextConfigFile(file.name, extension)) {
+            "text/plain"
+        } else {
+            file.mimeType ?: anyFileType
+        }
+    }
 
     val basePath by lazy { file.getBasePath(globalClass) }
 
@@ -148,7 +154,7 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
         Intent(Intent.ACTION_VIEW).let { newIntent ->
             newIntent.setDataAndType(
                 createUri(),
-                customMimeType ?: if (anonymous) anyFileType else file.mimeType
+                customMimeType ?: if (anonymous) anyFileType else mimeType
             )
 
             newIntent.addFlags(
@@ -326,7 +332,9 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
             return true
         }
 
-        if (codeFileType.contains(extension) || editableFileType.contains(extension)) {
+        if (FileMimeType.isTextConfigFile(file.name, extension) ||
+            codeFileType.contains(extension) || editableFileType.contains(extension)
+        ) {
             globalClass.textEditorManager.openTextEditor(
                 this,
                 context

@@ -123,6 +123,43 @@ object RootFsClient {
         }
     }
 
+    suspend fun stat(path: File): RootFsEntry? = serviceLock.withLock {
+        val rootFileSystem = ensureFileSystem() ?: return@withLock null
+
+        try {
+            val file = rootFileSystem.getFile(path.absolutePath)
+            val isDirectory = file.isDirectory
+            val isSymlink = file.isSymlink
+
+            RootFsEntry(
+                name = file.name,
+                isDirectory = isDirectory,
+                isSymlink = isSymlink,
+                isBrokenSymlink = isSymlink && !file.exists(),
+                size = if (isDirectory) 0L else file.length(),
+                modified = file.lastModified(),
+            ).also {
+                lastError = null
+            }
+        } catch (e: Throwable) {
+            lastError = "stat NIO gagal ${path.absolutePath}: ${e.message}"
+            logWarning(lastError!!)
+            null
+        }
+    }
+
+    suspend fun exists(path: File): Boolean? = serviceLock.withLock {
+        val rootFileSystem = ensureFileSystem() ?: return@withLock null
+
+        try {
+            rootFileSystem.getFile(path.absolutePath).exists()
+        } catch (e: Throwable) {
+            lastError = "exists NIO gagal ${path.absolutePath}: ${e.message}"
+            logWarning(lastError!!)
+            null
+        }
+    }
+
     private suspend fun ensureFileSystem(): FileSystemManager? {
         fileSystem?.let { return it }
         if (!isRootAvailable()) return null

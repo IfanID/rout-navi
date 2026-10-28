@@ -25,6 +25,7 @@ import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFile
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFileHolder.Companion.IMAGE
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFileHolder.Companion.VIDEO
 import com.raival.compose.file.explorer.screen.main.tab.files.provider.StorageProvider
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.main.tab.home.holder.HomeCategory
 import com.raival.compose.file.explorer.screen.main.tab.home.holder.RecentFile
 import kotlinx.coroutines.CoroutineScope
@@ -55,10 +56,12 @@ class HomeTab : Tab() {
 
     override suspend fun getTitle() = globalClass.getString(R.string.home_tab_title)
 
-    fun getPinnedFiles() {
+    suspend fun getPinnedFiles() {
         pinnedFiles.clear()
         pinnedFiles.addAll(
-            globalClass.preferencesManager.pinnedFiles.map { LocalFileHolder(File(it)) }
+            globalClass.preferencesManager.pinnedFiles.map { path ->
+                RootShell.holderFor(File(path))
+            }
         )
     }
 

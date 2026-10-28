@@ -373,8 +373,14 @@ object StorageProvider {
         return getMediaFiles(MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO, sortingPrefs)
     }
 
-    fun getBookmarks() = globalClass.preferencesManager.bookmarks
-        .map { LocalFileHolder(File(it)) } as ArrayList<LocalFileHolder>
+    suspend fun getBookmarks(): ArrayList<LocalFileHolder> {
+        // Baca dari DataStore supaya markah yang baru ditambahkan tidak hilang
+        // karena state sesi belum tersinkron.
+        val bookmarks = globalClass.preferencesManager.loadBookmarks()
+        return bookmarks.mapTo(ArrayList<LocalFileHolder>(bookmarks.size)) { path ->
+            RootShell.holderFor(File(path))
+        }
+    }
 
     fun getRawRecentFiles(
         recentHours: Int = 24 * 5,
