@@ -23,6 +23,7 @@ import com.raival.compose.file.explorer.screen.main.tab.files.misc.SortingMethod
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.StorageDeviceType.EXTERNAL_STORAGE
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.StorageDeviceType.INTERNAL_STORAGE
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.StorageDeviceType.ROOT
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.main.tab.home.holder.RecentFile
 import java.io.File
 
@@ -56,7 +57,12 @@ object StorageProvider {
             )
         }
 
-        storageDevices.add(getRoot(context))
+        // Entri Root hanya ditampilkan kalau izin root sudah diberikan.
+        // Pengecekan izin berjalan di latar (App.onCreate) supaya daftar
+        // penyimpanan tidak menunggu prompt root.
+        if (RootShell.isGranted) {
+            storageDevices.add(getRoot(context))
+        }
 
         return storageDevices
     }
@@ -377,7 +383,17 @@ object StorageProvider {
         // Baca dari DataStore supaya markah yang baru ditambahkan tidak hilang
         // karena state sesi belum tersinkron.
         val bookmarks = globalClass.preferencesManager.loadBookmarks()
-        return bookmarks.mapTo(ArrayList<LocalFileHolder>(bookmarks.size)) { path ->
+
+        // Tambahan fork: markah Root dibuang kalau izin root sudah tidak ada.
+        // Markah biasa tetap memakai alur bawaan tanpa perubahan.
+        val visible = bookmarks.filter {
+            RootShell.hasRootOrUnknown || !RootShell.prefersRootListing(File(it))
+        }
+        if (visible.size != bookmarks.size) {
+            globalClass.preferencesManager.saveBookmarks(visible.toSet())
+        }
+
+        return visible.mapTo(ArrayList<LocalFileHolder>(visible.size)) { path ->
             RootShell.holderFor(File(path))
         }
     }

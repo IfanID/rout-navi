@@ -71,6 +71,8 @@ import com.raival.compose.file.explorer.screen.main.tab.files.holder.StorageDevi
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFileHolder.Companion.BOOKMARKS
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFileHolder.Companion.RECENT
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.StorageDeviceType.ROOT
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.main.tab.files.provider.StorageProvider
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.FileContentIcon
 import com.raival.compose.file.explorer.screen.main.tab.home.HomeTab
@@ -516,6 +518,13 @@ private fun StorageSection(
 
     LaunchedEffect(Unit) {
         storageList.addAll(StorageProvider.getStorageDevices(globalClass))
+
+        // Izin root baru diketahui setelah pengecekan selesai. Muat ulang
+        // daftar supaya entri Root muncul tanpa perlu restart aplikasi.
+        if (RootShell.isAvailable() && storageList.none { it.type == ROOT }) {
+            storageList.clear()
+            storageList.addAll(StorageProvider.getStorageDevices(globalClass))
+        }
     }
 
     // Storage options

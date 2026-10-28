@@ -5,6 +5,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,15 +18,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -64,24 +69,34 @@ fun BookmarksDialog(
         val bookmarks = remember {
             mutableStateListOf<LocalFileHolder>()
         }
+        var isLoading by remember { mutableStateOf(true) }
 
         LaunchedEffect(Unit) {
-            withContext(Dispatchers.IO) {
-                val stored = globalClass.preferencesManager.loadBookmarks()
-                val holders = stored.map { RootShell.holderFor(File(it)) }
-                // Path Root tidak bisa dicek lewat java.io.File, jadi verifikasi
-                // memakai RootShell agar markah Root tidak ikut terhapus.
-                val valid = holders.filter { holder ->
-                    RootShell.exists(holder.file) ?: holder.isValid()
-                }
+            try {
+                withContext(Dispatchers.IO) {
+                    // Alur bawaan dipakai apa adanya. Satu-satunya tambahan:
+                    // markah Root dibuang kalau izin root sudah tidak ada.
+                    val stored = globalClass.preferencesManager.loadBookmarks()
+                    val visible = stored.filter {
+                        RootShell.hasRootOrUnknown || !RootShell.prefersRootListing(File(it))
+                    }
+                    val holders = visible.map { RootShell.holderFor(File(it)) }
+                    // Path Root tidak bisa dicek lewat java.io.File, jadi verifikasi
+                    // memakai RootShell agar markah Root tidak ikut terhapus.
+                    val valid = holders.filter { holder ->
+                        RootShell.exists(holder.file) ?: holder.isValid()
+                    }
 
-                bookmarks.addAll(valid)
+                    bookmarks.addAll(valid)
 
-                if (valid.size != stored.size) {
-                    globalClass.preferencesManager.saveBookmarks(
-                        valid.map { it.uniquePath }.toSet()
-                    )
+                    if (valid.size != stored.size) {
+                        globalClass.preferencesManager.saveBookmarks(
+                            valid.map { it.uniquePath }.toSet()
+                        )
+                    }
                 }
+            } finally {
+                isLoading = false
             }
         }
 
@@ -113,7 +128,18 @@ fun BookmarksDialog(
 
             Space(size = 8.dp)
 
-            AnimatedVisibility(globalClass.preferencesManager.bookmarks.isNotEmpty()) {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                }
+            }
+
+            AnimatedVisibility(!isLoading && globalClass.preferencesManager.bookmarks.isNotEmpty()) {
                 LazyColumn(Modifier.animateContentSize()) {
                     itemsIndexed(
                         items = bookmarks,
@@ -177,7 +203,7 @@ fun BookmarksDialog(
                 }
             }
 
-            AnimatedVisibility(globalClass.preferencesManager.bookmarks.isEmpty()) {
+            AnimatedVisibility(!isLoading && globalClass.preferencesManager.bookmarks.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

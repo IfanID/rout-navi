@@ -1,6 +1,5 @@
 package com.raival.compose.file.explorer.screen.main.tab.files.provider
 
-import com.raival.compose.file.explorer.App.Companion.globalClass
 import com.raival.compose.file.explorer.rootfs.RootFsClient
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.RootLocalFileHolder
@@ -28,6 +27,12 @@ object RootShell {
     @Volatile
     private var granted: Boolean? = null
 
+    /**
+     * Status izin root dari pengecekan terakhir.
+     * Dipakai UI (misalnya ikon kunci) yang tidak boleh menunggu prompt root.
+     */
+    val isGranted: Boolean get() = granted == true
+
     suspend fun isAvailable(): Boolean {
         if (granted == true) return true
 
@@ -40,12 +45,16 @@ object RootShell {
             val ok = RootFsClient.isRootAvailable() ||
                     run("id")?.contains("uid=0") == true
             granted = ok
-            if (!ok) {
-                logWarning("akses root tidak tersedia: ${RootFsClient.lastError}")
-            }
             ok
         }
     }
+
+    /**
+     * Status root untuk validasi markah. Nilai `null` (pengecekan belum
+     * selesai) dianggap masih ada supaya markah Root tidak terhapus sebelum
+     * hasilnya diketahui. Tidak menunggu prompt sehingga tidak menambah delay.
+     */
+    val hasRootOrUnknown: Boolean get() = granted != false
 
     /**
      * Folder yang isinya perlu dibaca lewat root agar lengkap. Penyimpanan
@@ -139,7 +148,6 @@ object RootShell {
             ?: run("/system/bin/ls -A1p ${quote(path)}")
 
         if (raw == null) {
-            logError("ls gagal: $path")
             return null
         }
 
@@ -245,7 +253,6 @@ object RootShell {
             if (result.isSuccess) {
                 result.out.joinToString("\n")
             } else {
-                logWarning("libsu exit=${result.code} cmd=$command")
                 runUsingProcessBuilder(command)
             }
         } catch (_: Throwable) {
@@ -298,7 +305,6 @@ object RootShell {
                     process.destroyForcibly()
                     reader.join(1_000)
                     errorDrain.join(1_000)
-                    logWarning("su timeout: $command")
                     return@withContext null
                 }
 
@@ -307,22 +313,12 @@ object RootShell {
                 if (process.exitValue() == 0) {
                     output.toString()
                 } else {
-                    logWarning("su exit=${process.exitValue()} cmd=$command err=${errors.toString().trim()}")
                     null
                 }
-            } catch (e: Exception) {
-                logWarning("su gagal: ${e.message}")
+            } catch (_: Exception) {
                 null
             }
         }
-
-    private fun logWarning(message: String) {
-        runCatching { globalClass.logger.logWarning("RootShell: $message") }
-    }
-
-    private fun logError(message: String) {
-        runCatching { globalClass.logger.logError("RootShell: $message") }
-    }
 
     /** Kutip path agar aman terhadap spasi dan karakter shell. */
     private fun quote(value: String) = "'" + value.replace("'", "'\\''") + "'"

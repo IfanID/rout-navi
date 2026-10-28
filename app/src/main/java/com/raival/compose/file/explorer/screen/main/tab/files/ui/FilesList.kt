@@ -69,6 +69,7 @@ import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.videoFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.ViewConfigs
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.ViewType
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.preferences.constant.FileItemSizeMap.getFileListFontSize
 import com.raival.compose.file.explorer.screen.preferences.constant.FileItemSizeMap.getFileListIconSize
 import com.raival.compose.file.explorer.screen.preferences.constant.FileItemSizeMap.getFileListSpace
@@ -566,7 +567,7 @@ private fun FileIcon(
                 FileContentIcon(item)
             }
 
-            if (!item.canRead) {
+            if (!item.canRead && !RootShell.isGranted) {
                 Icon(
                     modifier = Modifier
                         .size(14.dp)

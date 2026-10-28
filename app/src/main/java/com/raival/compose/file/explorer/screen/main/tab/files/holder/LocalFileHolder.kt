@@ -120,7 +120,13 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
         val direct = file.listFiles()
 
         if (direct != null && !RootShell.prefersRootListing(file)) {
-            return direct.map { LocalFileHolder(it) }
+            // Folder penyimpanan dibaca langsung supaya operasi tulis tetap
+            // jalan. Pengecualian: entri seperti Android/data dan Android/obb
+            // tidak bisa dibaca app biasa, jadi daftarnya diambil lewat root
+            // agar isinya bisa dibuka dan tidak ditandai terkunci.
+            if (direct.none { !it.canRead() }) {
+                return direct.map { LocalFileHolder(it) }
+            }
         }
 
         RootShell.list(file)?.let { return it }

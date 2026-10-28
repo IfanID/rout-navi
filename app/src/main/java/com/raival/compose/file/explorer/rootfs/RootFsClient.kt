@@ -63,7 +63,6 @@ object RootFsClient {
             available
         } catch (e: Throwable) {
             lastError = "shell root gagal: ${e.message}"
-            logWarning(lastError!!)
             false
         }
     }
@@ -102,7 +101,6 @@ object RootFsClient {
             }
         } catch (e: Throwable) {
             lastError = "NIO gagal ${directory.absolutePath}: ${e.message}"
-            logWarning(lastError!!)
             fileSystem = null
             lastFailureAt = System.currentTimeMillis()
             null
@@ -118,7 +116,6 @@ object RootFsClient {
             }
         } catch (e: Throwable) {
             lastError = "buka file NIO gagal ${path.absolutePath}: ${e.message}"
-            logWarning(lastError!!)
             null
         }
     }
@@ -143,7 +140,6 @@ object RootFsClient {
             }
         } catch (e: Throwable) {
             lastError = "stat NIO gagal ${path.absolutePath}: ${e.message}"
-            logWarning(lastError!!)
             null
         }
     }
@@ -155,9 +151,24 @@ object RootFsClient {
             rootFileSystem.getFile(path.absolutePath).exists()
         } catch (e: Throwable) {
             lastError = "exists NIO gagal ${path.absolutePath}: ${e.message}"
-            logWarning(lastError!!)
             null
         }
+    }
+
+    /**
+     * Menyambung service root lebih awal supaya akses pertama (misalnya
+     * dialog Markah atau folder sistem) tidak menunggu proses bind.
+     * Mengembalikan true kalau filesystem root siap dipakai.
+     */
+    suspend fun warmUp(): Boolean = serviceLock.withLock {
+        if (fileSystem != null) return@withLock true
+
+        // Jangan mengulang bind yang baru saja gagal.
+        if (System.currentTimeMillis() - lastFailureAt < RETRY_DELAY_MS) {
+            return@withLock false
+        }
+
+        ensureFileSystem() != null
     }
 
     private suspend fun ensureFileSystem(): FileSystemManager? {
@@ -214,14 +225,9 @@ object RootFsClient {
                 }
             } catch (e: Throwable) {
                 lastError = "root service gagal: ${e.message}"
-                logWarning(lastError!!)
                 lastFailureAt = System.currentTimeMillis()
                 null
             }
         }
-    }
-
-    private fun logWarning(message: String) {
-        runCatching { globalClass.logger.logWarning("RootFsClient: $message") }
     }
 }

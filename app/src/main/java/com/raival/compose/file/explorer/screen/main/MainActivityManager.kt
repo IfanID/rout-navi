@@ -21,6 +21,7 @@ import com.raival.compose.file.explorer.screen.main.tab.Tab
 import com.raival.compose.file.explorer.screen.main.tab.apps.AppsTab
 import com.raival.compose.file.explorer.screen.main.tab.files.FilesTab
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.main.tab.files.provider.StorageProvider
 import com.raival.compose.file.explorer.screen.main.tab.home.HomeTab
 import kotlinx.coroutines.CoroutineScope
@@ -54,6 +55,18 @@ class MainActivityManager {
                 it.copy(
                     storageDevices = StorageProvider.getStorageDevices(globalClass)
                 )
+            }
+        }
+
+        // Entri Root baru muncul setelah izin root diberikan; muat ulang
+        // daftar penyimpanan supaya tidak perlu restart aplikasi.
+        managerScope.launch {
+            if (RootShell.isAvailable()) {
+                _state.update {
+                    it.copy(
+                        storageDevices = StorageProvider.getStorageDevices(globalClass)
+                    )
+                }
             }
         }
     }

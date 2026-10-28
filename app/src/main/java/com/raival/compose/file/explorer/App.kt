@@ -23,6 +23,7 @@ import com.raival.compose.file.explorer.coil.pdf.PdfFileDecoder
 import com.raival.compose.file.explorer.coil.zip.ZipFileFetcher
 import com.raival.compose.file.explorer.coil.zip.ZipFileKeyer
 import com.raival.compose.file.explorer.common.FileExplorerLogger
+import com.raival.compose.file.explorer.rootfs.RootFsClient
 import com.raival.compose.file.explorer.screen.main.MainActivityManager
 import com.raival.compose.file.explorer.screen.main.tab.files.coil.DocumentFileMapper
 import com.raival.compose.file.explorer.screen.main.tab.files.holder.LocalFileHolder
@@ -108,7 +109,11 @@ class App : Application(), coil3.SingletonImageLoader.Factory {
 
         // Deteksi akses root saat aplikasi dibuka supaya prompt Magisk muncul
         // lebih awal dan hasilnya dipakai ulang oleh folder terlindung.
-        applicationScope.launch { RootShell.isAvailable() }
+        // Service NIO langsung disambungkan agar akses root pertama (Markah,
+        // folder sistem) tidak menunggu proses bind.
+        applicationScope.launch {
+            if (RootShell.isAvailable()) RootFsClient.warmUp()
+        }
 
         cleanOnExitDir()
     }
