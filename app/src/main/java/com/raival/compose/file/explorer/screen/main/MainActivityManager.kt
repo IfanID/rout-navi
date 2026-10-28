@@ -480,7 +480,7 @@ class MainActivityManager {
         onResult: (List<GithubRelease>) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO).launch {
-            val url = "https://api.github.com/repos/Raival-e/Prism-File-Explorer/releases"
+            val url = "https://api.github.com/repos/IfanID/rout-navi/releases"
             var releases = emptyList<GithubRelease>()
 
             try {
@@ -490,7 +490,7 @@ class MainActivityManager {
                     connectTimeout = 10000
                     readTimeout = 5000
                     setRequestProperty("Accept", "application/vnd.github.v3+json")
-                    setRequestProperty("User-Agent", "Prism-File-Explorer")
+                    setRequestProperty("User-Agent", "Rout-Navi")
                 }
 
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {

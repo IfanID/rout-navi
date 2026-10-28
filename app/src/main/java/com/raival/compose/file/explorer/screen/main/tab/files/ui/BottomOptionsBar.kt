@@ -5,14 +5,17 @@ import androidx.compose.animation.expandIn
 import androidx.compose.animation.shrinkOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Add
@@ -36,10 +39,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.raival.compose.file.explorer.App.Companion.globalClass
@@ -64,6 +72,96 @@ fun BottomOptionsBar(tab: FilesTab) {
     ) {
         Column {
             HorizontalDivider()
+
+            // Strip mode lintas pilihan, hanya tampil setelah diaktifkan
+            // lewat menu opsi. Posisinya tepat di atas toolbar pilihan.
+            if (tab.isCrossSelectionActive) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .block(shape = RectangleShape)
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val isCrossTab = tab.isCrossTabSelectionEnabled
+                    val modeName = stringResource(
+                        if (isCrossTab) R.string.select_across_tabs
+                        else R.string.select_across_folders
+                    )
+                    val isSelectionMode = tab.selectionModeEnabled
+                    val stateLabel = stringResource(
+                        if (isSelectionMode) R.string.enabled else R.string.disabled
+                    )
+                    val badgeText = stringResource(
+                        if (isSelectionMode) R.string.selection_toggle_on
+                        else R.string.selection_toggle_off
+                    )
+                    val accentColor = if (isSelectionMode) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    val borderColor = if (isSelectionMode) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant
+                    }
+                    val badgeShape = RoundedCornerShape(8.dp)
+
+                    // Badge teks ON/OFF: hanya garis dan warna teks yang
+                    // berubah, tanpa latar isi supaya menyatu dengan toolbar.
+                    Box(
+                        modifier = Modifier
+                            .clip(badgeShape)
+                            .border(1.dp, borderColor, badgeShape)
+                            .clickable { tab.toggleSelectionMode() }
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .semantics {
+                                contentDescription = "$modeName ($stateLabel)"
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = badgeText,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            color = accentColor
+                        )
+                    }
+                    Text(
+                        modifier = Modifier.padding(start = 8.dp),
+                        text = modeName,
+                        fontSize = 12.sp,
+                        fontWeight = if (isSelectionMode) FontWeight.Medium else FontWeight.Normal,
+                        color = accentColor
+                    )
+                    Text(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 12.dp),
+                        text = stringResource(
+                            R.string.selection_count_folders,
+                            tab.selectedFiles.size,
+                            tab.countSelectedFolders()
+                        ),
+                        textAlign = TextAlign.End,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        modifier = Modifier
+                            .clickable { tab.cancelSelection() }
+                            .padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                        text = stringResource(R.string.cancel),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
             Row(
                 Modifier
                     .fillMaxWidth()

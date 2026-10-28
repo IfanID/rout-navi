@@ -283,6 +283,62 @@ private fun MultipleFilesContent(details: PropertiesState.MultipleContentPropert
                 progressFlow = details.countProgress
             )
         }
+
+        // Lokasi dan nama ditampilkan untuk semua jenis berkas maupun folder.
+        PropertySection(title = stringResource(R.string.location)) {
+            if (details.groups.size == 1) {
+                val group = details.groups.first()
+                PropertyRow(
+                    icon = Icons.Default.FolderOpen,
+                    label = stringResource(R.string.location),
+                    value = group.location,
+                    // Salin selalu berisi path lengkap semua item.
+                    copyText = details.fullPaths,
+                    maxLines = 4
+                )
+                PropertyRow(
+                    icon = Icons.Default.DriveFileRenameOutline,
+                    label = stringResource(R.string.name),
+                    value = group.names.joinToString("\n"),
+                    copyText = details.fullPaths,
+                    maxLines = 8
+                )
+            } else {
+                // Folder berbeda: tiap folder jadi judul, nama berkas menjorok.
+                details.groups.forEach { group ->
+                    PropertyRow(
+                        icon = Icons.Default.FolderOpen,
+                        label = stringResource(R.string.location),
+                        value = group.location,
+                        copyText = details.fullPaths,
+                        maxLines = 4
+                    )
+                    group.names.forEach { name ->
+                        SelectionNameRow(
+                            name = name,
+                            copyText = details.fullPaths
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Nama berkas yang menjorok di bawah folder asalnya. */
+@Composable
+private fun SelectionNameRow(name: String, copyText: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Space(32.dp)
+        CopiableText(
+            text = name,
+            copyText = copyText,
+            modifier = Modifier.weight(1f),
+            maxLines = 3
+        )
     }
 }
 
@@ -323,7 +379,9 @@ private fun PropertySection(
 fun PropertyRow(
     icon: ImageVector,
     label: String,
-    value: String
+    value: String,
+    copyText: String = value,
+    maxLines: Int = 3
 ) {
     if (value.isNotBlank()) {
         Row(
@@ -347,6 +405,8 @@ fun PropertyRow(
             Space(8.dp)
             CopiableText(
                 text = value,
+                copyText = copyText,
+                maxLines = maxLines,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -427,6 +487,8 @@ private fun PulsingDot() {
 @Composable
 fun CopiableText(
     text: String,
+    copyText: String = text,
+    maxLines: Int = 3,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onSurface
 ) {
@@ -446,14 +508,15 @@ fun CopiableText(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
             color = color,
-            maxLines = 3,
+            maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .fillMaxWidth()
-                .pointerInput(text) {
+                .pointerInput(copyText) {
                     detectTapGestures(
                         onLongPress = {
-                            text.copyToClipboard()
+                            // Teks tampilan bisa diringkas, yang disalin tetap utuh.
+                            copyText.copyToClipboard()
                             showCopiedFeedback = true
                             showMsg(globalClass.getString(R.string.copied_to_clipboard))
                         }

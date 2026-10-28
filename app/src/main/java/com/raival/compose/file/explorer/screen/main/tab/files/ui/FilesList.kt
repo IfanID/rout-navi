@@ -289,7 +289,7 @@ private fun ColumnFileItem(
             )
             .combinedClickable(
                 onClick = {
-                    if (tab.selectedFiles.isNotEmpty()) {
+                    if (tab.isSelectionModeActive) {
                         toggleSelection()
                     } else {
                         if (item.isFile()) {
@@ -314,7 +314,17 @@ private fun ColumnFileItem(
                 item = item,
                 size = getFileListIconSize(tab.activeFolder).dp,
                 viewConfigs = viewConfigs,
-                onClick = { toggleSelection() },
+                onClick = {
+                    if (tab.isSelectionModeActive) {
+                        toggleSelection()
+                    } else {
+                        if (item.isFile()) {
+                            tab.openFile(context, item)
+                        } else {
+                            tab.openFolder(item, false)
+                        }
+                    }
+                },
                 onLongClick = { handleLongClick(tab, currentItemPath, item, index) }
             )
 
@@ -387,7 +397,7 @@ private fun GridFileItem(
             .then(if (viewConfigs.galleryMode) Modifier.aspectRatio(1f) else Modifier)
             .combinedClickable(
                 onClick = {
-                    if (tab.selectedFiles.isNotEmpty()) {
+                    if (tab.isSelectionModeActive) {
                         toggleSelection()
                     } else {
                         if (item.isFile()) {
@@ -427,7 +437,7 @@ private fun GridFileItem(
                     item = item,
                     size = (getFileListIconSize(tab.activeFolder) * 1.5).dp,
                     onClick = {
-                        if (tab.selectedFiles.isNotEmpty()) {
+                        if (tab.isSelectionModeActive) {
                             toggleSelection()
                         } else {
                             if (item.isFile()) {
@@ -655,6 +665,8 @@ private fun handleLongClick(
     index: Int
 ) {
     val preferencesManager = globalClass.preferencesManager
+    // Long-press selalu masuk mode seleksi, termasuk saat saklar sedang nonaktif.
+    tab.selectionModeEnabled = true
     val isFirstSelection = tab.selectedFiles.isEmpty()
     val isAlreadySelected = tab.selectedFiles.containsKey(currentItemPath)
     val isNewSelection = !isAlreadySelected

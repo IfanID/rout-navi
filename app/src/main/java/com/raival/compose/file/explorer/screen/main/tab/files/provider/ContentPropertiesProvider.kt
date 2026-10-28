@@ -33,6 +33,12 @@ data class CalculationProgress(
     val message: String = emptyString
 )
 
+/** Satu folder beserta nama item terpilih di dalamnya. */
+data class SelectionGroup(
+    val location: String,
+    val names: List<String>
+)
+
 sealed interface PropertiesState {
     object Loading : PropertiesState
 
@@ -58,6 +64,10 @@ sealed interface PropertiesState {
         val totalSize: StateFlow<String>,
         val countProgress: StateFlow<CalculationProgress>,
         val sizeProgress: StateFlow<CalculationProgress>,
+        /** Folder asal tiap item, dipertahankan urut sesuai urutan pilihan. */
+        val groups: List<SelectionGroup>,
+        /** Semua path lengkap, dipakai sebagai isi salinan. */
+        val fullPaths: String,
     ) : PropertiesState
 }
 
@@ -214,7 +224,9 @@ class ContentPropertiesProvider(private val contentHolders: List<ContentHolder>)
                     totalFileCount = totalFileCountFlow,
                     totalSize = totalSizeFlow,
                     countProgress = countProgressFlow,
-                    sizeProgress = sizeProgressFlow
+                    sizeProgress = sizeProgressFlow,
+                    groups = buildSelectionGroups(files),
+                    fullPaths = files.joinToString("\n") { it.uniquePath },
                 )
             )
         }
@@ -275,6 +287,34 @@ class ContentPropertiesProvider(private val contentHolders: List<ContentHolder>)
             }
         }
         activeJobs.add(job)
+    }
+
+    /**
+     * Mengelompokkan item terpilih menurut folder asalnya. Urutan folder dan
+     * nama mengikuti urutan pilihan pengguna.
+     */
+    private fun buildSelectionGroups(files: List<ContentHolder>): List<SelectionGroup> {
+        val grouped = LinkedHashMap<String, MutableList<String>>()
+
+        files.forEach { file ->
+            val location = getLocation(file.uniquePath)
+            val name = file.displayName.ifEmpty { globalClass.getString(R.string.root) }
+            grouped.getOrPut(location) { mutableListOf() }.add(name)
+        }
+
+        return grouped.map { (location, names) -> SelectionGroup(location, names) }
+    }
+
+    /** Folder induk sebuah path, termasuk untuk path akar dan area Root. */
+    private fun getLocation(path: String): String {
+        val normalized = path.trimEnd('/')
+        if (normalized.isEmpty()) return "/"
+
+        val separatorIndex = normalized.lastIndexOf('/')
+        // Path tanpa folder induk (mis. "/berkas") tetap dianggap di akar.
+        if (separatorIndex <= 0) return "/"
+
+        return normalized.substring(0, separatorIndex)
     }
 
     private fun determineFileType(file: ContentHolder): String {

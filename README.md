@@ -1,185 +1,256 @@
-> [!IMPORTANT]  
-> **This repository is no longer actively maintained.** I am unable to provide support, fix bugs, or merge pull requests. If you’d like to take over maintenance, feel free to fork the project and I’m happy to add a link to your fork in this README.
+**Bahasa Indonesia** | [English](README.en.md)
+
+> [!NOTE]
+> Fork pribadi **IfanID** dari [Prism File Explorer](https://github.com/Raival-e/Prism-File-Explorer).
 
 <div align="center">
 
-<img src="assets/app_icon.png" width="120" alt="Prism File Explorer Logo"/>
+<img src="assets/app_icon.png" width="120" alt="Logo Rout Navi"/>
 
-# Prism File Explorer
+# Rout Navi
+
+<sub>Fork dari [Prism File Explorer](https://github.com/Raival-e/Prism-File-Explorer)</sub>
 
 [![Platform](https://img.shields.io/badge/Platform-Android-brightgreen.svg?logo=android)](https://www.android.com/)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Release](https://img.shields.io/github/v/release/Raival-e/Prism-File-Explorer?label=Release)](https://github.com/Raival-e/Prism-File-Explorer/releases)
-[![APK Downloads](https://img.shields.io/github/downloads/Raival-e/Prism-File-Explorer/total.svg?label=APK%20Downloads)](https://github.com/Raival-e/Prism-File-Explorer/releases)
-[![Stars](https://img.shields.io/github/stars/Raival-e/Prism-File-Explorer?style=flat&logo=github)](https://github.com/Raival-e/Prism-File-Explorer/stargazers)
-[![Forks](https://img.shields.io/github/forks/Raival-e/Prism-File-Explorer?style=flat&logo=github)](https://github.com/Raival-e/Prism-File-Explorer/network/members)
-[<img src="https://shields.rbtlog.dev/simple/com.raival.compose.file.explorer" alt="RB shield">](https://shields.rbtlog.dev/com.raival.compose.file.explorer)
+[![Release](https://img.shields.io/github/v/release/IfanID/rout-navi?label=Release)](https://github.com/IfanID/rout-navi/releases)
+[![Unduhan APK](https://img.shields.io/github/downloads/IfanID/rout-navi/total.svg?label=Unduhan%20APK)](https://github.com/IfanID/rout-navi/releases)
+[![Bintang](https://img.shields.io/github/stars/IfanID/rout-navi?style=flat&logo=github)](https://github.com/IfanID/rout-navi/stargazers)
+[![Fork](https://img.shields.io/github/forks/IfanID/rout-navi?style=flat&logo=github)](https://github.com/IfanID/rout-navi/network/members)
 
-**A modern, feature-rich, and lightweight file manager for Android, built entirely with Kotlin and Jetpack Compose.**
+**Pengelola berkas Android yang modern, kaya fitur, dan ringan, dibangun sepenuhnya dengan Kotlin dan Jetpack Compose.**
 
-*Delivering a seamless file management experience with a beautiful Material Design interface*
+*Menghadirkan pengalaman mengelola berkas yang mulus dengan antarmuka Material Design yang indah*
 
 </div>
 
 ---
 
-## 📱 Screenshots
+## 📱 Tangkapan Layar
 
 <div align="center">
-  <img src="assets/image1.png" width="22%" alt="Main Interface"/>
-  <img src="assets/image2.png" width="22%" alt="File Operations"/>
-  <img src="assets/image3.png" width="22%" alt="Apps Extractor"/>
-  <img src="assets/image4.png" width="22%" alt="Text Editor"/>
+  <img src="assets/image1.png" width="22%" alt="Antarmuka Utama"/>
+  <img src="assets/image2.png" width="22%" alt="Operasi Berkas"/>
+  <img src="assets/image3.png" width="22%" alt="Ekstraktor Aplikasi"/>
+  <img src="assets/image4.png" width="22%" alt="Editor Teks"/>
 </div>
 
 <div align="center">
-  <img src="assets/image6.png" width="21%" alt="Audio Player"/>
-  <img src="assets/image7.png" width="21%" alt="Image Viewer"/>
-  <img src="assets/image5.png" width="21%" alt="PDF Viewer"/>
+  <img src="assets/image6.png" width="21%" alt="Pemutar Audio"/>
+  <img src="assets/image7.png" width="21%" alt="Penampil Gambar"/>
+  <img src="assets/image5.png" width="21%" alt="Penampil PDF"/>
 </div>
 
 ---
 
-## ✨ Key Features
+## ✨ Fitur Utama
 
-### 🎨 **Modern User Interface**
+### 🆕 Fitur Tambahan (Fork IfanID)
 
-- **Jetpack Compose UI**: Fully declarative and responsive interface
-- **Material Design 3**: Beautiful, consistent design language
-- **Dark/Light Theme**: Automatic theme switching support
-- **Smooth Animations**: Fluid transitions and interactions
+Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit terbaru.
 
-### 📁 **Comprehensive File Management**
+#### 🎬 Subtitle dan Terjemahan
 
-- **Complete File Operations**: Create, copy, move, rename, delete files and folders
-- **Advanced Selection**: Multi-select with intuitive gestures
-- **Smart Cut/Copy/Paste**: Clipboard operations with visual feedback
-- **Batch Operations**: Perform actions on multiple files simultaneously
-- **File Properties**: Detailed information about files and directories
+- Format subtitle teks didukung di editor: `srt`, `vtt`, `ass`, `ssa`, `sub`, `sbv`, `smi`, `sami`, `ttml`, `dfxp`, `lrc`, `scc`, dan `mpl2`.
+- Grammar TextMate untuk `srt`, `vtt`, `ass`, dan `lrc`; `ttml`/`dfxp` memakai grammar XML yang sudah ada.
+- `idx` dan `sup` ditandai sebagai subtitle bitmap yang tidak bisa diedit; `.sub` biner (VobSub) ditolak lewat deteksi header MPEG-PS.
+- Ikon subtitle/closed caption dan fallback teks polos bila grammar gagal dimuat.
+- Terjemahan Indonesia lengkap (`values-in`, 455 string).
 
-### 🗂️ **Advanced Features**
+#### 🗜️ Arsip ZIP, 7Z, TAR, dan RAR
 
-- **Multi-Tab Interface**: Manage multiple directories simultaneously
-- **Quick Navigation**: Breadcrumb navigation and quick access shortcuts
-- **Search Functionality**: Find files and folders quickly
-- **Sorting Options**: Sort by name, size, date, type with ascending/descending order
-- **View Modes**: Grid and list view options
+- Ekstrak arsip ke folder saat ini, ke dalam folder khusus arsip, atau ke path tujuan pilihan.
+- Buka isi arsip langsung tanpa ekstrak (live ZIP, 7Z, TAR, RAR); format dideteksi dari magic bytes, bukan hanya ekstensi.
+- Kompres ke ZIP, 7Z, atau TAR dengan pemilih format di samping kolom nama; format terakhir diingat.
+- Dialog sandi untuk arsip terenkripsi dan penanganan konflik nama berkas saat ekstrak.
 
-### 📺 **Built-in Media Viewers**
+#### 🔐 Akses Root
 
-- **Image Viewer**: Support for JPEG, PNG, GIF, WebP, and more
-- **Video Player**: Play MP4, AVI, MKV, MOV, and other formats
-- **Audio Player**: MP3, WAV, FLAC, OGG playback support
-- **PDF Viewer**: View PDF documents natively
-- **Text Editor**: Syntax highlighting for code files
+- Layanan root berbasis libsu NIO dengan `FLAG_MOUNT_MASTER` agar isi `/data/data` terbaca lengkap.
+- Daftar isi Root dinamis tanpa folder hardcode, lengkap dengan trail back dan urutan nama/folder.
+- Metadata symlink dibaca lewat `lstat`; ikon link dan link rusak dibedakan.
+- Berkas teks di area Root bisa dibuka di editor lewat pipe NIO.
+- Fallback ke shell root jika layanan root gagal.
 
-### 🗜️ **Archive Management**
+#### 🔖 Markah Folder Root
 
-- **Extract Archives**: Support for ZIP format
-- **Create Archives**: Compress files and folders into ZIP format
-- **Archive Preview**: Browse archive contents without extraction
+- Markah dan sematan folder Root dibangun ulang lewat `RootShell.holderFor()` supaya tetap dikenali sebagai folder.
+- Markah ditulis dan dibaca langsung dari DataStore sehingga tidak hilang saat state sesi belum tersinkron.
+- Opsi tambah/hapus markah tersedia juga saat berada di Root home.
 
-### ⚡ **Performance & Efficiency**
+#### 🔑 Dukungan Berkas Teks, Konfigurasi, dan Kunci SSH
 
-- **Lightweight**: Minimal resource usage and fast startup
-- **Optimized**: Smooth performance on low-end devices
-- **Background Operations**: Non-blocking file operations
-- **Memory Efficient**: Smart memory management for large directories
+- Berkas kunci publik dan sertifikat teks dibuka langsung di editor: `*.pub`, `*.pem`, `*.crt`, `*.cer`, `authorized_keys`, `known_hosts`, `ssh_config`, dan `sshd_config`.
+- Script shell dikenali sebagai teks: `*.sh`, `*.zsh`, `*.bash`, `*.ksh`, `*.fish`, `*.csh`, `*.tcsh`, `*.ash`, `*.dash`, `*.shell`, `*.rc`, `*.zshrc`, `*.bashrc`, `*.profile`, riwayat shell, dan tema Zsh.
+- Berkas konfigurasi teks: `*.properties`, `*.conf`, `*.cfg`, `*.ini`, `*.env`, termasuk `termux.properties`.
+- Dotfile tanpa ekstensi seperti `.zshrc`, `.zshenv`, `.zprofile`, `.bashrc`, `.bash_profile`, `.profile`, `.vimrc`, `.nanorc`, `.gitconfig`, `.editorconfig`, `.tmux.conf`, dan `.screenrc` tetap terdeteksi sebagai teks.
+
+#### ☑️ Properti Pilihan Multi-Item
+
+- Properti Pilihan menampilkan **Lokasi** dan **Nama** untuk semua jenis berkas, folder, dan area Root.
+- Pilihan dari beberapa folder ditampilkan berkelompok per folder.
+- Long-press pada baris properti menyalin path lengkap semua item, satu path per baris.
+
+#### 🗂️ Pilihan Lintas Folder dan Tab
+
+- Menu opsi menyediakan **Beda folder** dan **Beda tab**.
+- **Beda folder**: pindah folder tidak menghapus pilihan, jadi berkas dari beberapa folder bisa diproses bersamaan.
+- **Beda tab**: pilihan digabung antar tab, lalu tab baru dibuka di Penyimpanan internal untuk memilih dari lokasi lain.
+- Badge **ON/OFF** di strip atas toolbar pilihan: `ON` berarti ketukan memilih, `OFF` berarti ketukan membuka berkas/folder tetapi pilihan tetap tersimpan.
+- Long-press saat badge `OFF` langsung menyalakan mode seleksi.
+- Tombol `Batal` mengosongkan seluruh pilihan dan mematikan mode lintas folder/tab.
+
+### 📦 Fitur Bawaan Prism
+
+<details>
+<summary><b>Lihat daftar fitur bawaan</b></summary>
+
+### 🎨 **Antarmuka Modern**
+
+- **UI Jetpack Compose**: Antarmuka deklaratif penuh dan responsif
+- **Material Design 3**: Bahasa desain yang indah dan konsisten
+- **Tema Terang/Gelap**: Dukungan pergantian tema otomatis
+- **Animasi Mulus**: Transisi dan interaksi yang halus
+
+### 📁 **Manajemen Berkas Menyeluruh**
+
+- **Operasi Berkas Lengkap**: Buat, salin, pindah, ganti nama, dan hapus berkas maupun folder
+- **Seleksi Lanjutan**: Multi-pilih dengan gestur yang intuitif
+- **Potong/Salin/Tempel Cerdas**: Operasi papan klip dengan umpan balik visual
+- **Operasi Massal**: Jalankan aksi pada banyak berkas sekaligus
+- **Properti Berkas**: Informasi rinci tentang berkas dan direktori
+
+### 🗂️ **Fitur Lanjutan**
+
+- **Antarmuka Multi-Tab**: Kelola beberapa direktori sekaligus
+- **Navigasi Cepat**: Navigasi breadcrumb dan pintasan akses cepat
+- **Pencarian**: Temukan berkas dan folder dengan cepat
+- **Opsi Pengurutan**: Urutkan berdasarkan nama, ukuran, tanggal, tipe, naik atau turun
+- **Mode Tampilan**: Pilihan tampilan grid dan daftar
+- **Akses Root**: Jelajahi direktori sistem terproteksi lewat layanan root
+
+### 📺 **Penampil Media Bawaan**
+
+- **Penampil Gambar**: Dukungan JPEG, PNG, GIF, WebP, dan lainnya
+- **Pemutar Video**: Putar MP4, AVI, MKV, MOV, dan format lain
+- **Pemutar Audio**: Dukungan pemutaran MP3, WAV, FLAC, OGG
+- **Penampil PDF**: Lihat dokumen PDF secara langsung
+- **Editor Teks**: Penyorotan sintaks untuk berkas kode
+- **Dukungan Subtitle**: Lihat dan edit SRT, VTT, ASS, SSA, LRC, serta format subtitle lain dengan penyorotan sintaks
+
+### 🗜️ **Manajemen Arsip**
+
+- **Ekstrak Arsip**: Dukungan format ZIP, 7Z, TAR, dan RAR
+- **Buat Arsip**: Kompres berkas dan folder ke ZIP, 7Z, atau TAR
+- **Pratinjau Arsip**: Telusuri isi arsip tanpa ekstrak (live ZIP, 7Z, TAR, dan RAR)
+
+### ⚡ **Performa dan Efisiensi**
+
+- **Ringan**: Penggunaan sumber daya minimal dan startup cepat
+- **Teroptimasi**: Performa mulus di perangkat kelas bawah
+- **Operasi Latar Belakang**: Operasi berkas tanpa memblokir antarmuka
+- **Hemat Memori**: Pengelolaan memori cerdas untuk direktori besar
+
+</details>
 
 ---
 
-## 📥 Download Options
+## 📥 Pilihan Unduhan
 
-| Platform            | Link                                                                                                                                                                                                                                                                                                                                                                        |
-|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **GitHub Releases** | [![GitHub](https://img.shields.io/badge/GitHub-Download-black?style=for-the-badge&logo=github)](https://github.com/Raival-e/Prism-File-Explorer/releases)                                                                                                                                                                                                                   |
-| **IzzyOnDroid**     | [![IzzyOnDroid](https://img.shields.io/badge/IzzyOnDroid-Download-green?style=for-the-badge)](https://apt.izzysoft.de/fdroid/index/apk/com.raival.compose.file.explorer)                                                                                                                                                                                                    |
-| **Obtainium**       | [![Obtainium](https://img.shields.io/badge/Obtainium-Download-blue?style=for-the-badge)](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.raival.compose.file.explorer%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2FRaival-e%2FPrism-File-Explorer%22%2C%22author%22%3A%22Raival-e%22%2C%22name%22%3A%22File%20Explorer%20Compose%22%7D) |
-| **OpenApk**         | [![OpenApk](https://img.shields.io/badge/OpenApk-Download-purple?style=for-the-badge)](https://www.openapk.net/file-explorer/com.raival.compose.file.explorer/)                                                                                                                                                                                                             |
+| Platform            | Tautan                                                                                                                                       |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| **GitHub Releases** | [![GitHub](https://img.shields.io/badge/GitHub-Unduh-black?style=for-the-badge&logo=github)](https://github.com/IfanID/rout-navi/releases) |
 
-### 📋 System Requirements
+### 📋 Persyaratan Sistem
 
-- **Android Version**: 6.0 (API 23) or higher
-- **Permissions**: Storage access for file management
+- **Versi Android**: 8.0 (API 26) atau lebih baru
+- **Izin**: Akses penyimpanan untuk mengelola berkas
 
 ---
 
-## 🛠️ Built With
+## 🛠️ Dibangun Dengan
 
-| Technology                                                                                                               | Purpose                  | Version       |
-|--------------------------------------------------------------------------------------------------------------------------|--------------------------|---------------|
-| ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white)                             | **Programming Language** | Latest        |
-| ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=flat&logo=jetpackcompose&logoColor=white) | **UI Framework**         | Latest Stable |
-| ![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)                          | **Platform**             | SDK 34+       |
-| ![Material Design](https://img.shields.io/badge/Material%20Design-757575?style=flat&logo=materialdesign&logoColor=white) | **Design System**        | Material 3    |
-
+| Teknologi                                                                                                                | Kegunaan             | Versi         |
+|--------------------------------------------------------------------------------------------------------------------------|----------------------|---------------|
+| ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white)                             | **Bahasa Pemrograman** | Terbaru      |
+| ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=flat&logo=jetpackcompose&logoColor=white) | **Kerangka UI**      | Stabil Terbaru |
+| ![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)                          | **Platform**         | SDK 36        |
+| ![Material Design](https://img.shields.io/badge/Material%20Design-757575?style=flat&logo=materialdesign&logoColor=white) | **Sistem Desain**    | Material 3    |
 
 ---
 
-## 🔨 Building from Source
+## 🔨 Membangun dari Sumber
 
-### Prerequisites
+### Prasyarat
 
-- **JDK**: 17 or higher
-- **Android SDK**: API level 34+
-- **Git**: For cloning the repository
+- **JDK**: 17–21 (Gradle 8.7)
+- **Android SDK**: API level 36
+- **Git**: Untuk mengkloning repositori
 
-### Build Instructions
+### Langkah Build
 
-1. **Clone the repository**:
+1. **Kloning repositori**:
    ```bash
-   git clone https://github.com/Raival-e/Prism-File-Explorer.git
-   cd Prism-File-Explorer
+   git clone https://github.com/IfanID/rout-navi.git
+   cd rout-navi
    ```
 
-2. **Build the project**:
+2. **Build proyek**:
    ```bash
    ./gradlew assembleRelease
    ```
 
-3. **Find the APK**:
-    - Generated APK will be in `app/build/outputs/apk/release/`
----
+3. **Temukan APK**:
+    - APK hasil build ada di `app/build/outputs/apk/release/`
 
-## 🤝 Contributing
+### Catatan Opsional: Build di ARM64 (Termux)
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
+Bagian ini **bukan syarat** — hanya berlaku kalau kamu membangun proyek di perangkat ARM64 (misalnya Termux dengan proot-distro). Build di Android Studio x86_64 tidak perlu setelan ini.
 
-### 📝 **Development Guidelines**
-
-- Follow Kotlin coding conventions
-- Write meaningful commit messages
+- Gunakan JDK 21, karena Gradle 8.7 gagal di JDK 25.
+- Arahkan `android.aapt2FromMavenOverride` ke aapt2 ARM64 dan set `android.enableResourceOptimizations=false` lewat `~/.gradle/gradle.properties` (bukan `gradle.properties` proyek), agar build CI x86_64 tetap berjalan.
+- Jangan menyimpan path absolut mesin lokal di file proyek.
 
 ---
 
-## 📊 Project Stats
+## 🤝 Kontribusi
 
-![GitHub stats](https://github-readme-stats.vercel.app/api?username=Raival-e&repo=Prism-File-Explorer&show_icons=true&theme=default)
+1. **Fork** repositori ini
+2. **Buat** branch fitur (`git checkout -b fitur/fitur-baru`)
+3. **Commit** perubahan (`git commit -m 'Tambah fitur baru'`)
+4. **Push** ke branch (`git push origin fitur/fitur-baru`)
+5. **Buka** Pull Request
 
----
+### 📝 **Panduan Pengembangan**
 
-## ☕ Support the Project
-
-If you find **Prism File Explorer** useful and would like to support its development, consider
-buying me a coffee! Your support helps me maintain and improve this project.
-
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/RaivalR)
-
-*Every contribution, no matter how small, helps keep this project alive and growing! ❤️*
+- Ikuti konvensi penulisan kode Kotlin
+- Tulis pesan commit yang jelas
 
 ---
 
-## 📄 License
+## 📊 Statistik Proyek
 
-This project is licensed under the **GNU General Public License v3.0**.
+![Repo stats](https://github-readme-stats.vercel.app/api/pin/?username=IfanID&repo=rout-navi&theme=default)
+
+---
+
+## 🙏 Sumber Asli
+
+Proyek ini adalah fork dari **Prism File Explorer** karya [Raival-e](https://github.com/Raival-e).
+Terima kasih kepada penulis asli atas basis kode dan lisensi GPLv3 yang memungkinkan fork ini.
+
+- Repositori asli: https://github.com/Raival-e/Prism-File-Explorer
+
+---
+
+## 📄 Lisensi
+
+Proyek ini dilisensikan di bawah **GNU General Public License v3.0**.
 
 ```
 Prism File Explorer - A modern Android file manager
 Copyright (C) 2024 Raival-e
+Modifikasi fork © 2026 IfanID
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -187,18 +258,18 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 ```
 
-See the [LICENSE](LICENSE) file for the full license text.
+Lihat berkas [LICENSE](LICENSE) untuk teks lisensi lengkap.
 
 ---
 
-## 💬 Support & Community
+## 💬 Dukungan dan Komunitas
 
-| Platform               | Purpose                       |
-|------------------------|-------------------------------|
-| **GitHub Issues**      | Bug reports, feature requests |
-| **GitHub Discussions** | Community support, questions  |
-| **Email**              | Private inquiries             |
+| Platform               | Kegunaan                          |
+|------------------------|-----------------------------------|
+| **GitHub Issues**      | Laporan bug, permintaan fitur     |
+| **GitHub Discussions** | Dukungan komunitas, pertanyaan    |
+| **Email**              | Pertanyaan pribadi                |
 
-**⭐ If you find this project useful, please consider giving it a star!**
+**⭐ Kalau proyek ini bermanfaat, pertimbangkan untuk memberi bintang!**
 
-[![Star History](https://img.shields.io/github/stars/Raival-e/Prism-File-Explorer?style=social)](https://github.com/Raival-e/Prism-File-Explorer/stargazers)
+[![Star History](https://img.shields.io/github/stars/IfanID/rout-navi?style=social)](https://github.com/IfanID/rout-navi/stargazers)
