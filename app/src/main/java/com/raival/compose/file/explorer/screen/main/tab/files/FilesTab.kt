@@ -38,6 +38,7 @@ import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.
 import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.main.tab.files.provider.StorageProvider
 import com.raival.compose.file.explorer.screen.main.tab.files.state.BottomOptionsBarState
+import com.raival.compose.file.explorer.screen.main.tab.files.state.CrossTabSelection
 import com.raival.compose.file.explorer.screen.main.tab.files.state.DialogsState
 import com.raival.compose.file.explorer.screen.main.tab.files.state.PendingArchiveExtraction
 import com.raival.compose.file.explorer.screen.main.tab.files.task.CompressTask
@@ -67,7 +68,8 @@ class FilesTab(
     val scope = CoroutineScope(Dispatchers.IO)
 
     val homeDir: ContentHolder =
-        if (source is VirtualFileHolder || source.isFolder) source else runBlocking { source.getParent() }
+        if (source is VirtualFileHolder || source.isFolder) source
+        else runBlocking { source.getParent() }
             ?: StorageProvider.getPrimaryInternalStorage(globalClass).contentHolder
 
     var activeFolder: ContentHolder = homeDir
@@ -80,8 +82,32 @@ class FilesTab(
     )
 
     val highlightedFiles = arrayListOf<String>()
-    val selectedFiles = linkedMapOf<String, ContentHolder>()
+
+    /**
+     * Pilihan milik tab ini. Dipakai langsung selama mode lintas tab mati,
+     * sehingga perilaku lama tidak berubah.
+     */
+    private val localSelectedFiles = linkedMapOf<String, ContentHolder>()
+
+    /** Pilihan yang sedang aktif; dipakai bersama semua tab saat lintas tab. */
+    val selectedFiles: LinkedHashMap<String, ContentHolder>
+        get() = if (CrossTabSelection.enabled) CrossTabSelection.files else localSelectedFiles
+
     var lastSelectedFileIndex = -1
+
+    /**
+     * Mode pilih lintas folder. Saat aktif, pindah folder tidak menghapus
+     * pilihan sehingga berkas dari beberapa folder bisa diproses bersamaan.
+     * Nilainya hanya berlaku untuk tab ini dan tidak disimpan permanen.
+     */
+    var crossFolderSelectionEnabled by mutableStateOf(false)
+
+    /**
+     * Saklar mode seleksi di strip. Saat nonaktif, ketukan pada item membuka
+     * berkas/folder seperti biasa, tetapi pilihan yang sudah ada tetap
+     * dipertahankan sehingga pengguna bisa berpindah lokasi lebih dulu.
+     */
+    var selectionModeEnabled by mutableStateOf(CrossTabSelection.enabled)
 
     var currentPathSegments by mutableStateOf(listOf<ContentHolder>())
     var highlightedPathSegment by mutableStateOf(activeFolder)
@@ -218,7 +244,9 @@ class FilesTab(
     }
 
     override fun onBackPressed(): Boolean {
-        if (unselectAnySelectedFiles()) {
+        // Saat mode lintas pilihan aktif, tombol back langsung bernavigasi agar
+        // pilihan dari folder sebelumnya tidak hilang.
+        if (!isCrossSelectionActive && unselectAnySelectedFiles()) {
             return true
         } else if (handleBackGesture) {
             // Ambil dari breadcrumb di thread utama, lalu fallback ke parent
@@ -259,9 +287,123 @@ class FilesTab(
 
 
     fun unselectAllFiles(quickReload: Boolean = true) {
+        val wasCrossTab = CrossTabSelection.enabled
+
         selectedFiles.clear()
         lastSelectedFileIndex = -1
+
+        // Tanpa pilihan, mode lintas tidak lagi diperlukan.
+        if (wasCrossTab) {
+            CrossTabSelection.enabled = false
+            CrossTabSelection.files.clear()
+            globalClass.mainActivityManager.state.value.tabs
+                .filterIsInstance<FilesTab>()
+                .forEach {
+                    it.crossFolderSelectionEnabled = false
+                    it.selectionModeEnabled = false
+                    it.localSelectedFiles.clear()
+                    it.lastSelectedFileIndex = -1
+                }
+        } else if (crossFolderSelectionEnabled) {
+            crossFolderSelectionEnabled = false
+            selectionModeEnabled = false
+        }
+
         if (quickReload) quickReloadFiles()
+    }
+
+    /** Mode pilih lintas folder atau lintas tab sedang aktif. */
+    val isCrossSelectionActive: Boolean
+        get() = crossFolderSelectionEnabled || CrossTabSelection.enabled
+
+    /** Mode lintas tab aktif; semua tab memakai daftar pilihan yang sama. */
+    val isCrossTabSelectionEnabled: Boolean
+        get() = CrossTabSelection.enabled
+
+    /**
+     * Ketukan pada item harus memilih (bukan membuka) saat mode seleksi aktif.
+     * Di luar mode lintas pilihan, keberadaan pilihan sudah menandakan mode
+     * seleksi seperti perilaku sebelumnya.
+     */
+    val isSelectionModeActive: Boolean
+        get() = if (isCrossSelectionActive) selectionModeEnabled else selectedFiles.isNotEmpty()
+
+    /**
+     * Membalik saklar mode seleksi tanpa menyentuh pilihan yang sudah ada.
+     * Saat dimatikan, pengguna kembali ke mode normal (ketukan membuka item).
+     */
+    fun toggleSelectionMode() {
+        selectionModeEnabled = !selectionModeEnabled
+    }
+
+    /**
+     * Menyalakan mode pilih lintas folder dari menu opsi. Pilihan yang sedang
+     * ada tetap dipakai, lalu pindah folder tidak menghapusnya.
+     */
+    fun enableCrossFolderSelection() {
+        crossFolderSelectionEnabled = true
+        selectionModeEnabled = true
+    }
+
+    /**
+     * Menyalakan mode lintas tab. Pilihan dari semua tab digabung ke satu
+     * daftar bersama supaya bisa diproses bersamaan.
+     */
+    fun enableCrossTabSelection() {
+        if (!CrossTabSelection.enabled) {
+            CrossTabSelection.files.clear()
+            globalClass.mainActivityManager.state.value.tabs
+                .filterIsInstance<FilesTab>()
+                .forEach {
+                    CrossTabSelection.files.putAll(it.localSelectedFiles)
+                    // Semua tab berbagi pilihan, jadi semuanya masuk mode seleksi.
+                    it.crossFolderSelectionEnabled = true
+                    it.selectionModeEnabled = true
+                }
+            CrossTabSelection.enabled = true
+        }
+        crossFolderSelectionEnabled = true
+        selectionModeEnabled = true
+        quickReloadFiles()
+    }
+
+    /** Membatalkan mode lintas pilihan sekaligus seluruh pilihan. */
+    fun cancelSelection() {
+        val wasCrossTab = CrossTabSelection.enabled
+
+        CrossTabSelection.enabled = false
+        CrossTabSelection.files.clear()
+        crossFolderSelectionEnabled = false
+        selectionModeEnabled = false
+        localSelectedFiles.clear()
+        lastSelectedFileIndex = -1
+
+        // Mode lintas tab bersifat global, jadi semua tab ikut dikembalikan.
+        if (wasCrossTab) {
+            globalClass.mainActivityManager.state.value.tabs
+                .filterIsInstance<FilesTab>()
+                .forEach {
+                    it.crossFolderSelectionEnabled = false
+                    it.selectionModeEnabled = false
+                    it.localSelectedFiles.clear()
+                    it.lastSelectedFileIndex = -1
+                }
+        }
+
+        quickReloadFiles()
+    }
+
+    /** Jumlah folder unik dari berkas yang sedang dipilih. */
+    fun countSelectedFolders(): Int =
+        selectedFiles.keys.map { getParentPath(it) }.distinct().size
+
+    /** Folder induk sebuah path, termasuk untuk path akar. */
+    private fun getParentPath(path: String): String {
+        val normalized = path.trimEnd('/')
+        if (normalized.isEmpty()) return "/"
+
+        val separatorIndex = normalized.lastIndexOf('/')
+        return if (separatorIndex <= 0) "/" else normalized.substring(0, separatorIndex)
     }
 
     fun openFile(context: Context, item: ContentHolder) {
@@ -313,8 +455,8 @@ class FilesTab(
             tabViewLabel = createTabLabel()
         }
 
-        // Clear selection if not needed
-        if (!rememberSelectedFiles) {
+        // Mode lintas pilihan mempertahankan pilihan saat berpindah folder.
+        if (!rememberSelectedFiles && !isCrossSelectionActive) {
             selectedFiles.clear()
             lastSelectedFileIndex = -1
         } else {
@@ -568,6 +710,14 @@ class FilesTab(
 
     fun onSelectionChange() {
         scope.launch {
+            // Mode lintas pilihan tidak berguna tanpa pilihan; kembalikan ke
+            // mode normal supaya ketukan berikutnya membuka item seperti biasa.
+            if (selectedFiles.isEmpty() && isCrossSelectionActive) {
+                CrossTabSelection.enabled = false
+                crossFolderSelectionEnabled = false
+                selectionModeEnabled = false
+            }
+
             // Recheck the back gesture
             handleBackGesture =
                 selectedFiles.isNotEmpty() || (activeFolder.hasParent() && !shouldNavigateToParentTab())

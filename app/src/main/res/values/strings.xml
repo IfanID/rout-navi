@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">Prism File Explorer</string>
+    <string name="app_name">Rout Navi</string>
     <string name="root_dir">Root</string>
     <string name="internal_storage">Internal Storage</string>
     <string name="storage_permission_required">Storage access permission is required</string>
     <string name="title_activity_text_editor">TextEditorActivity</string>
-    <string name="main_activity_title">Prism File Explorer</string>
+    <string name="main_activity_title">Rout Navi</string>
     <string name="jump_to_path">Jump to path</string>
     <string name="destination_path">Destination path</string>
     <string name="open">Open</string>
@@ -234,6 +234,11 @@
     <string name="not_available">N/A</string>
     <string name="calculating">Calculating…</string>
     <string name="files_folders_count">%1$d files, %2$d folders</string>
+    <string name="select_across_folders">Select across folders</string>
+    <string name="select_across_tabs">Select across tabs</string>
+    <string name="selection_count_folders">%1$d selected · %2$d folders</string>
+    <string name="selection_toggle_on">ON</string>
+    <string name="selection_toggle_off">OFF</string>
     <string name="error_calculating">Error calculating</string>
     <string name="add_to_bookmarks">Add to bookmarks</string>
     <string name="file_operation">File Operation</string>

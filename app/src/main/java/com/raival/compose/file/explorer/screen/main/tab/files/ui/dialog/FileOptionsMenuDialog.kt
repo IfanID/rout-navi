@@ -19,6 +19,7 @@ import androidx.compose.material.icons.rounded.FormatColorText
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Merge
+import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.OpenInNewOff
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Share
@@ -58,6 +59,7 @@ import com.raival.compose.file.explorer.screen.main.tab.files.holder.VirtualFile
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.DefaultOpeningMethods
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.apkBundleFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.supportedArchiveFileType
+import com.raival.compose.file.explorer.screen.main.tab.files.provider.StorageProvider
 import com.raival.compose.file.explorer.screen.main.tab.files.task.ApksMergeTask
 import com.raival.compose.file.explorer.screen.main.tab.files.task.ApksMergeTaskParameters
 import com.raival.compose.file.explorer.screen.main.tab.files.task.CompressTask
@@ -298,6 +300,44 @@ fun FileOptionsMenuDialog(
                         globalClass.showMsg(R.string.done)
                         tab.unselectAllFiles()
                     }
+                }
+            }
+
+            // Mode pilih lintas folder/tab untuk menggabungkan berkas dari
+            // beberapa folder atau tab dalam satu pilihan.
+            if ((tab.activeFolder is LocalFileHolder || tab.activeFolder is RootFileHolder) &&
+                tab.selectedFiles.isNotEmpty()
+            ) {
+                // Opsi yang modenya sudah aktif disembunyikan supaya menu
+                // tidak menampilkan pilihan yang tidak berguna.
+                if (!tab.isCrossSelectionActive) {
+                    FileOption(
+                        Icons.Rounded.CreateNewFolder,
+                        stringResource(R.string.select_across_folders)
+                    ) {
+                        onDismissRequest()
+                        tab.enableCrossFolderSelection()
+                    }
+                }
+
+                // Beda tab selalu tersedia agar pengguna bisa menambah tab
+                // dari Penyimpanan internal kapan pun diperlukan.
+                FileOption(
+                    Icons.Rounded.OpenInNew,
+                    stringResource(R.string.select_across_tabs)
+                ) {
+                    onDismissRequest()
+                    tab.enableCrossTabSelection()
+                    // Tab baru sengaja dibuka di Penyimpanan internal supaya
+                    // pengguna bisa memilih berkas dari lokasi lain.
+                    tab.requestNewTab(
+                        FilesTab(
+                            source = StorageProvider
+                                .getPrimaryInternalStorage(globalClass)
+                                .contentHolder,
+                            context = context
+                        )
+                    )
                 }
             }
 
