@@ -234,11 +234,15 @@
     <string name="not_available">T/A</string>
     <string name="calculating">Menghitung…</string>
     <string name="files_folders_count">%1$d berkas, %2$d folder</string>
-    <string name="select_across_folders">Beda folder</string>
-    <string name="select_across_tabs">Beda tab</string>
+    <string name="select_across_folders">Pilih file &amp; folder</string>
+    <string name="select_across_tabs">Pilih file &amp; folder lintas tab</string>
+    <string name="browse_across_folders">Jelajah file &amp; folder</string>
+    <string name="browse_across_tabs">Jelajah file &amp; folder lintas tab</string>
     <string name="selection_count_folders">%1$d dipilih · %2$d folder</string>
     <string name="selection_toggle_on">ON</string>
     <string name="selection_toggle_off">OFF</string>
+    <string name="selection_toggle_on_hint">ketuk = pilih</string>
+    <string name="selection_toggle_off_hint">ketuk = buka</string>
     <string name="error_calculating">Gagal menghitung</string>
     <string name="add_to_bookmarks">Tambahkan ke markah</string>
     <string name="file_operation">Operasi Berkas</string>

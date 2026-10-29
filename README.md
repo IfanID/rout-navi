@@ -55,7 +55,7 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
 - Grammar TextMate untuk `srt`, `vtt`, `ass`, dan `lrc`; `ttml`/`dfxp` memakai grammar XML yang sudah ada.
 - `idx` dan `sup` ditandai sebagai subtitle bitmap yang tidak bisa diedit; `.sub` biner (VobSub) ditolak lewat deteksi header MPEG-PS.
 - Ikon subtitle/closed caption dan fallback teks polos bila grammar gagal dimuat.
-- Terjemahan Indonesia lengkap (`values-in`, 455 string).
+- Bahasa antarmuka: Inggris (default), Indonesia (`values-in`), Korea (`values-ko`), dan Mandarin (`values-zh`).
 
 #### 🗜️ Arsip ZIP, 7Z, TAR, dan RAR
 
@@ -89,16 +89,19 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
 
 - Properti Pilihan menampilkan **Lokasi** dan **Nama** untuk semua jenis berkas, folder, dan area Root.
 - Pilihan dari beberapa folder ditampilkan berkelompok per folder.
-- Long-press pada baris properti menyalin path lengkap semua item, satu path per baris.
+- Long-press pada baris **Lokasi** menyalin path lengkap semua item.
+- Long-press pada baris **Nama** menyalin nama item (bukan path), termasuk tiap nama di bawah folder saat pilihan berasal dari beberapa folder.
 
 #### 🗂️ Pilihan Lintas Folder dan Tab
 
-- Menu opsi menyediakan **Beda folder** dan **Beda tab**.
-- **Beda folder**: pindah folder tidak menghapus pilihan, jadi berkas dari beberapa folder bisa diproses bersamaan.
-- **Beda tab**: pilihan digabung antar tab, lalu tab baru dibuka di Penyimpanan internal untuk memilih dari lokasi lain.
+- Menu opsi menyediakan **Pilih file & folder** dan **Pilih file & folder lintas tab**.
+- **Pilih file & folder**: pindah folder tidak menghapus pilihan, jadi berkas dari beberapa folder bisa diproses bersamaan.
+- **Pilih file & folder lintas tab**: pilihan digabung antar tab, lalu tab baru dibuka di Penyimpanan internal untuk memilih dari lokasi lain.
+- Strip di atas toolbar pilihan menampilkan objek dan aksinya: `Pilih file & folder` saat ON, `Jelajah file & folder` saat OFF, dengan varian `... lintas tab` bila mode lintas tab aktif.
 - Badge **ON/OFF** di strip atas toolbar pilihan: `ON` berarti ketukan memilih, `OFF` berarti ketukan membuka berkas/folder tetapi pilihan tetap tersimpan.
 - Long-press saat badge `OFF` langsung menyalakan mode seleksi.
-- Tombol `Batal` mengosongkan seluruh pilihan dan mematikan mode lintas folder/tab.
+- Jumlah pilihan tampil di kanan strip (mis. `12 dipilih · 2 folder`) dan langsung berubah setiap kali pilihan bertambah atau berkurang.
+- Tombol **Batal** berbentuk pil dengan ikon `✕`, mengosongkan seluruh pilihan dan mematikan mode lintas folder/tab.
 
 ### 📦 Fitur Bawaan Prism
 
@@ -163,8 +166,11 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
 
 ### 📋 Persyaratan Sistem
 
-- **Versi Android**: 8.0 (API 26) atau lebih baru
-- **Izin**: Akses penyimpanan untuk mengelola berkas
+- **Versi Android**: 12.0 (API 31) atau lebih baru
+- **Izin**: Akses penyimpanan (`MANAGE_EXTERNAL_STORAGE` untuk mengelola seluruh berkas; dapat dicabut kapan saja)
+- **Root (opsional)**: hanya diperlukan untuk menjelajah area sistem lewat layanan root
+- **Arsitektur**: arm64-v8a, armeabi-v7a, x86, dan x86_64
+- **Versi saat ini**: 0.0.1 (versionCode 1)
 
 ---
 
@@ -172,10 +178,13 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
 
 | Teknologi                                                                                                                | Kegunaan             | Versi         |
 |--------------------------------------------------------------------------------------------------------------------------|----------------------|---------------|
-| ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white)                             | **Bahasa Pemrograman** | Terbaru      |
-| ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=flat&logo=jetpackcompose&logoColor=white) | **Kerangka UI**      | Stabil Terbaru |
-| ![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)                          | **Platform**         | SDK 36        |
+| ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white)                             | **Bahasa Pemrograman** | 2.4.21        |
+| ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=flat&logo=jetpackcompose&logoColor=white) | **Kerangka UI**      | BOM 2026.09.00 |
+| ![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)                          | **Platform**         | SDK 37        |
 | ![Material Design](https://img.shields.io/badge/Material%20Design-757575?style=flat&logo=materialdesign&logoColor=white) | **Sistem Desain**    | Material 3    |
+| ![Gradle](https://img.shields.io/badge/Gradle-02303A?style=flat&logo=gradle&logoColor=white)                             | **Build Tool**       | 9.8.2         |
+| ![Android Gradle Plugin](https://img.shields.io/badge/AGP-3DDC84?style=flat&logo=android&logoColor=white)                 | **Plugin Android**   | 9.5.0         |
+| ![OpenJDK](https://img.shields.io/badge/JDK-ED8B00?style=flat&logo=openjdk&logoColor=white)                              | **Runtime Build**    | 25 (LTS)      |
 
 ---
 
@@ -183,8 +192,8 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
 
 ### Prasyarat
 
-- **JDK**: 17–21 (Gradle 8.7)
-- **Android SDK**: API level 36
+- **JDK**: 25 (Gradle 9.8.2), minimum 17
+- **Android SDK**: API level 37 + Build-Tools 37.0.0
 - **Git**: Untuk mengkloning repositori
 
 ### Langkah Build
@@ -195,19 +204,21 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
    cd rout-navi
    ```
 
-2. **Build proyek**:
+2. **Build proyek** (Gradle wrapper otomatis mengunduh Gradle 9.8.2, tidak perlu memasang Gradle manual):
    ```bash
-   ./gradlew assembleRelease
+   ./gradlew assembleDebug     # APK debug
+   ./gradlew assembleRelease   # APK release (perlu signing config)
    ```
 
 3. **Temukan APK**:
-    - APK hasil build ada di `app/build/outputs/apk/release/`
+    - Debug: `app/build/outputs/apk/debug/`
+    - Release: `app/build/outputs/apk/release/`
 
 ### Catatan Opsional: Build di ARM64 (Termux)
 
 Bagian ini **bukan syarat** — hanya berlaku kalau kamu membangun proyek di perangkat ARM64 (misalnya Termux dengan proot-distro). Build di Android Studio x86_64 tidak perlu setelan ini.
 
-- Gunakan JDK 21, karena Gradle 8.7 gagal di JDK 25.
+- Gunakan JDK 25, karena Gradle 9.x sudah mendukungnya; pastikan `JAVA_HOME` mengarah ke JDK tersebut.
 - Arahkan `android.aapt2FromMavenOverride` ke aapt2 ARM64 dan set `android.enableResourceOptimizations=false` lewat `~/.gradle/gradle.properties` (bukan `gradle.properties` proyek), agar build CI x86_64 tetap berjalan.
 - Jangan menyimpan path absolut mesin lokal di file proyek.
 

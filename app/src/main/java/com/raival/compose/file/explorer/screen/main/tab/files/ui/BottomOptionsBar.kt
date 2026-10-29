@@ -5,6 +5,7 @@ import androidx.compose.animation.expandIn
 import androidx.compose.animation.shrinkOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Sort
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AddTask
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.ContentCut
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.FileCopy
@@ -40,6 +43,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -47,6 +51,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,48 +81,64 @@ fun BottomOptionsBar(tab: FilesTab) {
             // Strip mode lintas pilihan, hanya tampil setelah diaktifkan
             // lewat menu opsi. Posisinya tepat di atas toolbar pilihan.
             if (tab.isCrossSelectionActive) {
+                val isCrossTab = tab.isCrossTabSelectionEnabled
+                val isSelectionMode = tab.selectionModeEnabled
+                // Nama mode menyebut objek yang dipilih/dibuka, bukan penjelasan.
+                val modeName = stringResource(
+                    when {
+                        isCrossTab && isSelectionMode -> R.string.select_across_tabs
+                        isCrossTab -> R.string.browse_across_tabs
+                        isSelectionMode -> R.string.select_across_folders
+                        else -> R.string.browse_across_folders
+                    }
+                )
+                val stateLabel = stringResource(
+                    if (isSelectionMode) R.string.enabled else R.string.disabled
+                )
+                val badgeText = stringResource(
+                    if (isSelectionMode) R.string.selection_toggle_on
+                    else R.string.selection_toggle_off
+                )
+                // Keterangan aksi untuk pembaca layar dan baris kedua label.
+                val toggleHint = stringResource(
+                    if (isSelectionMode) R.string.selection_toggle_on_hint
+                    else R.string.selection_toggle_off_hint
+                )
+                val accentColor = if (isSelectionMode) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                val borderColor = if (isSelectionMode) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                }
+                val badgeBackground = if (isSelectionMode) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                } else {
+                    Color.Transparent
+                }
+                val pillShape = RoundedCornerShape(50)
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
                         .block(shape = RectangleShape)
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                        .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val isCrossTab = tab.isCrossTabSelectionEnabled
-                    val modeName = stringResource(
-                        if (isCrossTab) R.string.select_across_tabs
-                        else R.string.select_across_folders
-                    )
-                    val isSelectionMode = tab.selectionModeEnabled
-                    val stateLabel = stringResource(
-                        if (isSelectionMode) R.string.enabled else R.string.disabled
-                    )
-                    val badgeText = stringResource(
-                        if (isSelectionMode) R.string.selection_toggle_on
-                        else R.string.selection_toggle_off
-                    )
-                    val accentColor = if (isSelectionMode) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                    val borderColor = if (isSelectionMode) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.outlineVariant
-                    }
-                    val badgeShape = RoundedCornerShape(8.dp)
-
-                    // Badge teks ON/OFF: hanya garis dan warna teks yang
-                    // berubah, tanpa latar isi supaya menyatu dengan toolbar.
+                    // Tombol pil ON/OFF yang menonjol agar mudah ditekan.
                     Box(
                         modifier = Modifier
-                            .clip(badgeShape)
-                            .border(1.dp, borderColor, badgeShape)
+                            .clip(pillShape)
+                            .background(badgeBackground)
+                            .border(1.dp, borderColor, pillShape)
                             .clickable { tab.toggleSelectionMode() }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .padding(horizontal = 12.dp, vertical = 5.dp)
                             .semantics {
-                                contentDescription = "$modeName ($stateLabel)"
+                                contentDescription = "$modeName ($stateLabel) — $toggleHint"
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -130,35 +151,56 @@ fun BottomOptionsBar(tab: FilesTab) {
                             color = accentColor
                         )
                     }
-                    Text(
-                        modifier = Modifier.padding(start = 8.dp),
-                        text = modeName,
-                        fontSize = 12.sp,
-                        fontWeight = if (isSelectionMode) FontWeight.Medium else FontWeight.Normal,
-                        color = accentColor
-                    )
+
+                    // Nama mode saja; keterangan ON/OFF hanya untuk pembaca layar.
                     Text(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(start = 12.dp),
+                            .padding(start = 10.dp),
+                        text = modeName,
+                        fontSize = 12.sp,
+                        fontWeight = if (isSelectionMode) FontWeight.Medium else FontWeight.Normal,
+                        color = accentColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    // Jumlah pilihan tetap di kanan, sebelum tombol Batal.
+                    Text(
+                        modifier = Modifier.padding(horizontal = 8.dp),
                         text = stringResource(
                             R.string.selection_count_folders,
-                            tab.selectedFiles.size,
-                            tab.countSelectedFolders()
+                            state.selectedCount,
+                            state.selectedFolderCount
                         ),
                         textAlign = TextAlign.End,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
                     )
-                    Text(
+
+                    // Tombol Batal berbentuk pil dengan ikon.
+                    Row(
                         modifier = Modifier
+                            .clip(pillShape)
                             .clickable { tab.cancelSelection() }
-                            .padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-                        text = stringResource(R.string.cancel),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Box(Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.cancel),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 

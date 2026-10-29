@@ -8,12 +8,16 @@ import androidx.compose.material.icons.rounded.VerticalAlignTop
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.raival.compose.file.explorer.App.Companion.globalClass
 import com.raival.compose.file.explorer.R
 import com.raival.compose.file.explorer.common.emptyString
+import com.raival.compose.file.explorer.common.toFormattedDate
 import com.raival.compose.file.explorer.screen.preferences.constant.ThemePreference
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Composable
 fun AppearanceContainer() {
@@ -61,28 +65,49 @@ fun AppearanceContainer() {
             thickness = 3.dp
         )
 
-        val commonDateFormat = arrayListOf(
-            "yyyy-MM-dd HH:mm:ss",
-            "yyyy-MM-dd",
-            "dd-MM-yyyy HH:mm:ss",
-            "dd-MM-yyyy",
-            "MMM dd, yyyy HH:mm:ss",
-            "MMM dd, yyyy",
-            "MMMM dd, yyyy",
-            "EEE, MMM dd, yyyy"
-        )
+        // Pola dengan waktu ditampilkan lebih dulu agar mudah dibandingkan saat memilih
+        val commonDateFormat = remember {
+            listOf(
+                "yyyy-MM-dd HH:mm:ss",
+                "dd-MM-yyyy HH:mm:ss",
+                "MMM dd, yyyy HH:mm:ss",
+                "EEE, MMM dd, yyyy HH:mm:ss",
+                "EEE, dd MMM, yyyy HH:mm:ss",
+                "EEE, MM dd, yyyy HH:mm:ss",
+                "EEE, dd MM, yyyy HH:mm:ss",
+                "yyyy-MM-dd",
+                "dd-MM-yyyy",
+                "MMM dd, yyyy",
+                "MMMM dd, yyyy",
+                "EEE, MMM dd, yyyy"
+            )
+        }
+
+        // Contoh memakai waktu tetap supaya delapan pilihan bisa dibandingkan tanpa berubah-ubah
+        val dateFormatSamples = remember(commonDateFormat) {
+            val sampleTime = LocalDateTime.of(2026, 10, 28, 14, 5, 9)
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+            commonDateFormat.map { sampleTime.toFormattedDate(customFormat = it) }
+        }
+
+        val currentDateFormatSample = runCatching {
+            System.currentTimeMillis().toFormattedDate(customFormat = prefs.dateTimeFormat)
+        }.getOrDefault(prefs.dateTimeFormat)
 
         PreferenceItem(
             label = stringResource(R.string.date_time_format),
-            supportingText = prefs.dateTimeFormat,
+            supportingText = "$currentDateFormatSample · ${prefs.dateTimeFormat}",
             icon = Icons.Rounded.CalendarToday,
             onClick = {
                 prefs.singleChoiceDialog.show(
                     title = globalClass.getString(R.string.date_time_format),
                     description = globalClass.getString(R.string.select_date_format),
-                    choices = commonDateFormat,
+                    choices = dateFormatSamples,
                     selectedChoice = commonDateFormat.indexOf(prefs.dateTimeFormat),
-                    onSelect = { prefs.dateTimeFormat = commonDateFormat[it] }
+                    onSelect = { prefs.dateTimeFormat = commonDateFormat[it] },
+                    supportingTexts = commonDateFormat
                 )
             }
         )

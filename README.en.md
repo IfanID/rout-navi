@@ -55,7 +55,7 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
 - TextMate grammars for `srt`, `vtt`, `ass`, and `lrc`; `ttml`/`dfxp` reuse the existing XML grammar.
 - `idx` and `sup` are marked as bitmap subtitles that cannot be edited; binary `.sub` (VobSub) is rejected via MPEG-PS header detection.
 - Subtitle/closed-caption icons and plain-text fallback when a grammar fails to load.
-- Complete Indonesian translation (`values-in`, 455 strings).
+- Interface languages: English (default), Indonesian (`values-in`), Korean (`values-ko`), and Chinese (`values-zh`).
 
 #### 🗜️ ZIP, 7Z, TAR, and RAR Archives
 
@@ -89,16 +89,19 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
 
 - Selection Properties show **Location** and **Name** for every file, folder, and Root area.
 - Selections from multiple folders are grouped per folder.
-- Long-pressing a property row copies the full path of every item, one path per line.
+- Long-pressing the **Location** row copies the full path of every item.
+- Long-pressing the **Name** row copies item names (not paths), including each name under its folder when the selection spans multiple folders.
 
 #### 🗂️ Cross-Folder and Cross-Tab Selection
 
-- The options menu provides **Different folder** and **Different tab**.
-- **Different folder**: switching folders no longer clears the selection, so files from several folders can be processed together.
-- **Different tab**: the selection is merged across tabs, and a new tab opens in Internal Storage so you can pick from another location.
+- The options menu provides **Select files & folders** and **Select files & folders across tabs**.
+- **Select files & folders**: switching folders no longer clears the selection, so files from several folders can be processed together.
+- **Select files & folders across tabs**: the selection is merged across tabs, and a new tab opens in Internal Storage so you can pick from another location.
+- The strip above the selection toolbar names the object and the action: `Select files & folders` when ON, `Browse files & folders` when OFF, with an `across tabs` variant when cross-tab mode is active.
 - An **ON/OFF** badge in the selection toolbar strip: `ON` means a tap selects, `OFF` means a tap opens the file/folder while the selection is kept.
 - Long-pressing while the badge is `OFF` turns selection mode on immediately.
-- The `Cancel` button clears the whole selection and disables cross-folder/tab mode.
+- The selection count sits on the right of the strip (e.g. `12 selected · 2 folders`) and updates immediately whenever the selection changes.
+- The **Cancel** button is a pill with an `✕` icon; it clears the whole selection and disables cross-folder/tab mode.
 
 ### 📦 Built-in Prism Features
 
@@ -163,8 +166,11 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
 
 ### 📋 System Requirements
 
-- **Android Version**: 8.0 (API 26) or higher
-- **Permissions**: Storage access for file management
+- **Android Version**: 12.0 (API 31) or higher
+- **Permissions**: Storage access (`MANAGE_EXTERNAL_STORAGE` to manage all files; can be revoked at any time)
+- **Root (optional)**: only needed to browse system areas through the root service
+- **Architecture**: arm64-v8a, armeabi-v7a, x86, and x86_64
+- **Current version**: 0.0.1 (versionCode 1)
 
 ---
 
@@ -172,10 +178,13 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
 
 | Technology                                                                                                               | Purpose                  | Version        |
 |--------------------------------------------------------------------------------------------------------------------------|--------------------------|----------------|
-| ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white)                             | **Programming Language** | Latest         |
-| ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=flat&logo=jetpackcompose&logoColor=white) | **UI Framework**         | Latest Stable  |
-| ![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)                          | **Platform**             | SDK 36         |
+| ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white)                             | **Programming Language** | 2.4.21         |
+| ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=flat&logo=jetpackcompose&logoColor=white) | **UI Framework**         | BOM 2026.09.00 |
+| ![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)                          | **Platform**             | SDK 37         |
 | ![Material Design](https://img.shields.io/badge/Material%20Design-757575?style=flat&logo=materialdesign&logoColor=white) | **Design System**        | Material 3     |
+| ![Gradle](https://img.shields.io/badge/Gradle-02303A?style=flat&logo=gradle&logoColor=white)                             | **Build Tool**           | 9.8.2          |
+| ![Android Gradle Plugin](https://img.shields.io/badge/AGP-3DDC84?style=flat&logo=android&logoColor=white)                 | **Android Plugin**       | 9.5.0          |
+| ![OpenJDK](https://img.shields.io/badge/JDK-ED8B00?style=flat&logo=openjdk&logoColor=white)                              | **Build Runtime**        | 25 (LTS)       |
 
 ---
 
@@ -183,8 +192,8 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
 
 ### Prerequisites
 
-- **JDK**: 17–21 (Gradle 8.7)
-- **Android SDK**: API level 36
+- **JDK**: 25 (Gradle 9.8.2), minimum 17
+- **Android SDK**: API level 37 + Build-Tools 37.0.0
 - **Git**: For cloning the repository
 
 ### Build Instructions
@@ -195,19 +204,21 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
    cd rout-navi
    ```
 
-2. **Build the project**:
+2. **Build the project** (the Gradle wrapper downloads Gradle 9.8.2 automatically; no manual install needed):
    ```bash
-   ./gradlew assembleRelease
+   ./gradlew assembleDebug     # Debug APK
+   ./gradlew assembleRelease   # Release APK (requires a signing config)
    ```
 
 3. **Find the APK**:
-    - Generated APK will be in `app/build/outputs/apk/release/`
+    - Debug: `app/build/outputs/apk/debug/`
+    - Release: `app/build/outputs/apk/release/`
 
 ### Optional Note: Building on ARM64 (Termux)
 
 This section is **not a requirement** — it only applies when building on an ARM64 device (for example Termux with proot-distro). Building on x86_64 with Android Studio does not need these settings.
 
-- Use JDK 21, because Gradle 8.7 fails on JDK 25.
+- Use JDK 25, since Gradle 9.x supports it; make sure `JAVA_HOME` points to that JDK.
 - Point `android.aapt2FromMavenOverride` to the ARM64 aapt2 and set `android.enableResourceOptimizations=false` through `~/.gradle/gradle.properties` (not the project `gradle.properties`), so the x86_64 CI build keeps working.
 - Never commit absolute paths from your local machine into project files.
 

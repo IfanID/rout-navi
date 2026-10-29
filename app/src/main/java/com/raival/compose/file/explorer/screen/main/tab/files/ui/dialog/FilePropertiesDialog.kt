@@ -299,8 +299,8 @@ private fun MultipleFilesContent(details: PropertiesState.MultipleContentPropert
                 PropertyRow(
                     icon = Icons.Default.DriveFileRenameOutline,
                     label = stringResource(R.string.name),
+                    // Long-press menyalin daftar nama; path lengkap ada di baris lokasi.
                     value = group.names.joinToString("\n"),
-                    copyText = details.fullPaths,
                     maxLines = 8
                 )
             } else {
@@ -314,10 +314,7 @@ private fun MultipleFilesContent(details: PropertiesState.MultipleContentPropert
                         maxLines = 4
                     )
                     group.names.forEach { name ->
-                        SelectionNameRow(
-                            name = name,
-                            copyText = details.fullPaths
-                        )
+                        SelectionNameRow(name = name)
                     }
                 }
             }
@@ -327,7 +324,7 @@ private fun MultipleFilesContent(details: PropertiesState.MultipleContentPropert
 
 /** Nama berkas yang menjorok di bawah folder asalnya. */
 @Composable
-private fun SelectionNameRow(name: String, copyText: String) {
+private fun SelectionNameRow(name: String, copyText: String = name) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically

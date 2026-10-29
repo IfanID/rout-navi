@@ -5,6 +5,7 @@ import com.anggrayudi.storage.extension.toDocumentFile
 import com.raival.compose.file.explorer.App.Companion.globalClass
 import com.raival.compose.file.explorer.R
 import com.raival.compose.file.explorer.common.emptyString
+import com.raival.compose.file.explorer.common.toDisplayPath
 import com.raival.compose.file.explorer.common.toFormattedDate
 import com.raival.compose.file.explorer.common.toFormattedSize
 
@@ -33,7 +34,7 @@ data class ImageInfo(
                     ?.uppercase()
                     ?: globalClass.getString(R.string.not_available),
                 lastModified = (file?.lastModified() ?: 0).toFormattedDate(),
-                path = uri.path.toString()
+                path = uri.toDisplayPath()
             )
         }
     }

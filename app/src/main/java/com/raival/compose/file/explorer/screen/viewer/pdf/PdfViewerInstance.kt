@@ -10,6 +10,7 @@ import com.raival.compose.file.explorer.App.Companion.logger
 import com.raival.compose.file.explorer.R
 import com.raival.compose.file.explorer.common.isNot
 import com.raival.compose.file.explorer.common.name
+import com.raival.compose.file.explorer.common.toDisplayPath
 import com.raival.compose.file.explorer.common.toFormattedDate
 import com.raival.compose.file.explorer.screen.viewer.ViewerInstance
 import com.raival.compose.file.explorer.screen.viewer.pdf.misc.PdfMetadata
@@ -50,7 +51,7 @@ class PdfViewerInstance(
     val metadata by lazy {
         PdfMetadata(
             name = uri.name ?: globalClass.getString(R.string.unknown),
-            path = uri.toString(),
+            path = uri.toDisplayPath(),
             size = fileDescriptor?.statSize ?: 0L,
             lastModified = uri.toDocumentFile(globalClass)?.lastModified() ?: 0L,
             pages = pdfRenderer?.pageCount ?: 0

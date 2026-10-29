@@ -371,6 +371,8 @@ class PreferencesManager {
             private set
         var choices = mutableListOf<String>()
             private set
+        var supportingTexts = mutableListOf<String>()
+            private set
         var onSelect: (choice: Int) -> Unit = {}
             private set
         var selectedChoice = -1
@@ -380,6 +382,7 @@ class PreferencesManager {
             title = emptyString
             description = emptyString
             choices.clear()
+            supportingTexts.clear()
             selectedChoice = -1
             onSelect = {}
         }
@@ -389,12 +392,15 @@ class PreferencesManager {
             description: String,
             choices: List<String>,
             selectedChoice: Int,
-            onSelect: (choice: Int) -> Unit
+            onSelect: (choice: Int) -> Unit,
+            supportingTexts: List<String> = emptyList()
         ) {
             this.title = title
             this.description = description
             this.choices.clear()
             this.choices.addAll(choices)
+            this.supportingTexts.clear()
+            this.supportingTexts.addAll(supportingTexts)
             this.onSelect = onSelect
             this.selectedChoice = selectedChoice
             show = true

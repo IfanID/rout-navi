@@ -12,6 +12,7 @@ import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.Environment
 import android.provider.MediaStore
 import android.provider.MediaStore.MediaColumns.DISPLAY_NAME
 import android.provider.OpenableColumns
@@ -37,7 +38,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
+import com.anggrayudi.storage.extension.toDocumentFile
 import com.anggrayudi.storage.extension.trimFileSeparator
+import com.anggrayudi.storage.file.getAbsolutePath
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -178,6 +181,48 @@ fun String.copyToClipboard() {
     (globalClass.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(
         ClipData.newPlainText("clipboard", this)
     )
+}
+
+// Prefix URI FileProvider (lihat res/xml/provider_paths.xml), bukan bagian path nyata.
+private const val STORAGE_ROOT_URI_PREFIX = "/storage_root"
+
+/**
+ * Path yang layak ditampilkan ke pengguna.
+ * URI dari FileProvider membawa prefix "storage_root", sedangkan URI dokumen SAF
+ * perlu diubah ke path filesystem agar mudah disalin dan dibuka di aplikasi lain.
+ */
+fun Uri.toDisplayPath(): String {
+    val decodedPath = Uri.decode(path.orEmpty())
+
+    return when {
+        decodedPath.startsWith(STORAGE_ROOT_URI_PREFIX) ->
+            decodedPath.removePrefix(STORAGE_ROOT_URI_PREFIX)
+
+        scheme == "file" -> decodedPath
+        else -> runCatching { toDocumentFile(globalClass)?.getAbsolutePath(globalClass) }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?: decodedPath
+    }
+}
+
+/**
+ * Akar penyimpanan lokal: penyimpanan internal (/storage/emulated/0) atau
+ * akar volume lain seperti SD card (/storage/XXXX-XXXX).
+ * Dipakai agar navigasi tidak naik melewati akar penyimpanan ke /storage.
+ */
+fun String.isStorageRootPath(): Boolean {
+    val internalRoot = Environment.getExternalStorageDirectory().absolutePath
+    if (this == internalRoot) return true
+
+    // Jalur alternatif seperti /storage/self/primary menunjuk ke akar yang sama.
+    runCatching {
+        if (File(this).canonicalPath == File(internalRoot).canonicalPath) return true
+    }
+
+    // Akar volume lain (SD card/USB). "emulated" dan "self" bukan akar volume.
+    val volume = Regex("^/storage/([^/]+)$").find(this)?.groupValues?.get(1) ?: return false
+    return volume != "emulated" && volume != "self"
 }
 
 fun String.trimToLastTwoSegments(): String {

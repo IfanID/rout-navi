@@ -85,6 +85,7 @@ import com.raival.compose.file.explorer.App.Companion.logger
 import com.raival.compose.file.explorer.R
 import com.raival.compose.file.explorer.common.read
 import com.raival.compose.file.explorer.common.showMsg
+import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.CopiableText
 import com.raival.compose.file.explorer.screen.viewer.ViewerActivity
 import com.raival.compose.file.explorer.screen.viewer.ViewerInstance
 import com.raival.compose.file.explorer.screen.viewer.image.misc.ImageInfo
@@ -545,12 +546,16 @@ private fun ImageInfoBottomSheet(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            InfoRow(stringResource(R.string.name), imageInfo.name)
+            InfoRow(stringResource(R.string.name), imageInfo.name, copiable = true)
             InfoRow(stringResource(R.string.size), imageInfo.size)
             InfoRow(stringResource(R.string.dimensions), imageInfo.dimensions)
             InfoRow(stringResource(R.string.format), imageInfo.format)
             InfoRow(stringResource(R.string.last_modified), imageInfo.lastModified)
-            InfoRow(stringResource(R.string.path), imageInfo.path)
+            InfoRow(
+                label = stringResource(R.string.path),
+                value = imageInfo.path,
+                copiable = true
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -558,12 +563,17 @@ private fun ImageInfoBottomSheet(
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun InfoRow(
+    label: String,
+    value: String,
+    copiable: Boolean = false
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
@@ -572,11 +582,20 @@ private fun InfoRow(label: String, value: String) {
             modifier = Modifier.weight(1f)
         )
         Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(2f)
-        )
+        if (copiable) {
+            // Perilaku sama seperti properti berkas: long-press untuk menyalin
+            CopiableText(
+                text = value,
+                maxLines = 3,
+                modifier = Modifier.weight(2f)
+            )
+        } else {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(2f)
+            )
+        }
     }
 }

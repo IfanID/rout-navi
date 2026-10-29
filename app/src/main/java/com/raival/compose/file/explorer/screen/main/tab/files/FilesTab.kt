@@ -21,6 +21,7 @@ import com.raival.compose.file.explorer.R
 import com.raival.compose.file.explorer.common.getIndexIf
 import com.raival.compose.file.explorer.common.getMimeType
 import com.raival.compose.file.explorer.common.isNot
+import com.raival.compose.file.explorer.common.isStorageRootPath
 import com.raival.compose.file.explorer.common.orIf
 import com.raival.compose.file.explorer.common.removeIf
 import com.raival.compose.file.explorer.screen.main.MainActivity
@@ -473,7 +474,9 @@ class FilesTab(
                 showMoreOptionsButton = selectedFiles.isNotEmpty(),
                 showEmptyRecycleBinButton = activeFolder is LocalFileHolder &&
                         ((activeFolder as LocalFileHolder).hasParent(globalClass.recycleBinDir) ||
-                                activeFolder.uniquePath == globalClass.recycleBinDir.uniquePath)
+                                activeFolder.uniquePath == globalClass.recycleBinDir.uniquePath),
+                selectedCount = selectedFiles.size,
+                selectedFolderCount = countSelectedFolders()
             )
         }
 
@@ -482,7 +485,8 @@ class FilesTab(
 
         // Check if the back gesture can be handled
         handleBackGesture = selectedFiles.isNotEmpty() || runBlocking {
-            !shouldNavigateToParentTab() &&
+            !(activeFolder !is RootLocalFileHolder && activeFolder.uniquePath.isStorageRootPath()) &&
+                    !shouldNavigateToParentTab() &&
                     (currentPathSegments.size > 1 || activeFolder.hasParent())
         }
 
@@ -684,7 +688,9 @@ class FilesTab(
 
             // Recheck the back gesture
             handleBackGesture = selectedFiles.isNotEmpty()
-                    || (activeFolder.hasParent() && !shouldNavigateToParentTab())
+                    || (!(activeFolder !is RootLocalFileHolder &&
+                    activeFolder.uniquePath.isStorageRootPath()) &&
+                    activeFolder.hasParent() && !shouldNavigateToParentTab())
 
             // Update the bottom bar options
             _bottomOptionsBarState.update {
@@ -693,7 +699,9 @@ class FilesTab(
                     showMoreOptionsButton = selectedFiles.isNotEmpty(),
                     showEmptyRecycleBinButton = activeFolder is LocalFileHolder &&
                             ((activeFolder as LocalFileHolder).hasParent(globalClass.recycleBinDir) ||
-                                    activeFolder.uniquePath == globalClass.recycleBinDir.uniquePath)
+                                    activeFolder.uniquePath == globalClass.recycleBinDir.uniquePath),
+                    selectedCount = selectedFiles.size,
+                    selectedFolderCount = countSelectedFolders()
                 )
             }
 
@@ -720,7 +728,9 @@ class FilesTab(
 
             // Recheck the back gesture
             handleBackGesture =
-                selectedFiles.isNotEmpty() || (activeFolder.hasParent() && !shouldNavigateToParentTab())
+                selectedFiles.isNotEmpty() || (!(activeFolder !is RootLocalFileHolder &&
+                        activeFolder.uniquePath.isStorageRootPath()) &&
+                        activeFolder.hasParent() && !shouldNavigateToParentTab())
 
             // Update the bottom bar options
             _bottomOptionsBarState.update {
@@ -729,7 +739,9 @@ class FilesTab(
                     showMoreOptionsButton = selectedFiles.isNotEmpty(),
                     showEmptyRecycleBinButton = activeFolder is LocalFileHolder &&
                             ((activeFolder as LocalFileHolder).hasParent(globalClass.recycleBinDir) ||
-                                    activeFolder.uniquePath == globalClass.recycleBinDir.uniquePath)
+                                    activeFolder.uniquePath == globalClass.recycleBinDir.uniquePath),
+                    selectedCount = selectedFiles.size,
+                    selectedFolderCount = countSelectedFolders()
                 )
             }
 
@@ -797,9 +809,12 @@ class FilesTab(
     }
 
     private suspend fun updatePathList() {
-        // Walk through parent files
-        val paths = generateSequence(activeFolder) {
-            runBlocking { it.getParent() }
+        // Walk through parent files. Pembatasan akar penyimpanan hanya untuk
+        // penjelajahan biasa; lewat Root (RootLocalFileHolder) jejak tetap penuh.
+        val paths = generateSequence(activeFolder) { current ->
+            val stopAtStorageRoot = current !is RootLocalFileHolder &&
+                    current.uniquePath.isStorageRootPath()
+            if (stopAtStorageRoot) null else runBlocking { current.getParent() }
         }
 
         // Filter yang masih valid saja. Jangan memakai canRead di sini:

@@ -1,17 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.baselineprofile)
 }
 
 android {
     namespace = "com.raival.compose.file.explorer"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.raival.compose.file.explorer"
-        minSdk = 26
+        minSdk = 31
         targetSdk = 36
         versionCode = 1
         versionName = "0.0.1"
@@ -38,9 +37,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-        apiVersion = "1.9"
+    androidResources {
+        // Hanya bahasa yang benar-benar diterjemahkan; locale lain dari library dibuang
+        localeFilters += listOf("en", "in", "ko", "zh")
     }
 
     baselineProfile {
@@ -49,7 +48,7 @@ android {
 }
 
 dependencies {
-    "baselineProfile"(project(":baselineprofile"))
+    "baselineProfile"(project(":baselineProfile"))
     implementation(libs.androidx.profileinstaller)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 

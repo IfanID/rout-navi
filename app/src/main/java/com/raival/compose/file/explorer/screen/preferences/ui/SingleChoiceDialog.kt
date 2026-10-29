@@ -60,6 +60,7 @@ fun SingleChoiceDialog() {
                             text = choice,
                             isChecked = index == currentSelectedChoice,
                             icon = null,
+                            supportingText = dialog.supportingTexts.getOrNull(index),
                         ) {
                             currentSelectedChoice = index
                             dialog.onSelect(index)
