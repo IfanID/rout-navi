@@ -287,6 +287,7 @@
     <string name="edit_with">Edit with…</string>
     <string name="no_app_found_to_edit_this_image">No app found to edit this image</string>
     <string name="loading_image">Loading image…</string>
+    <string name="image_position">%1$d of %2$d</string>
     <string name="failed_to_load_image">Failed to load image</string>
     <string name="check_file_exists_and_try_again">Check if the file exists and try again</string>
     <string name="retry">Retry</string>

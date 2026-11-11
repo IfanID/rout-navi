@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Bundle
 import androidx.core.content.FileProvider
 import com.anggrayudi.storage.file.getBasePath
 import com.anggrayudi.storage.file.mimeType
@@ -277,7 +278,12 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
         return appsList
     }
 
-    fun openFileWithPackage(context: Context, packageName: String, className: String) {
+    fun openFileWithPackage(
+        context: Context,
+        packageName: String,
+        className: String,
+        extras: Bundle? = null
+    ) {
         val uri = createUri()
 
         val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -289,6 +295,7 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
                         or Intent.FLAG_GRANT_READ_URI_PERMISSION
                         or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
+            if (extras != null) putExtras(extras)
             setPackage(packageName)
             setClassName(packageName, className)
         }
@@ -368,10 +375,35 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
         }
 
         if (FileMimeType.imageFileType.contains(extension)) {
+            // Dibuka dari kategori gambar (mis. tab Home): seluruh foto yang
+            // tampil di kategori dikirim agar geseran pager melintasi folder
+            // — persis urutan daftar yang sedang dilihat. Selain itu hanya
+            // folder asal yang dikirim, jadi pager terbatas foto sefolder.
+            val extras = Bundle().apply {
+                putString(ImageViewerActivity.EXTRA_NAME, file.name)
+                val categoryPaths = (globalClass.mainActivityManager.getActiveTab() as? FilesTab)
+                    ?.takeIf { tab ->
+                        val folder = tab.activeFolder
+                        folder is VirtualFileHolder && folder.type == VirtualFileHolder.IMAGE
+                    }
+                    ?.let { tab ->
+                        ArrayList(
+                            tab.activeFolderContent
+                                .filterIsInstance<LocalFileHolder>()
+                                .filter { FileMimeType.imageFileType.contains(it.extension) }
+                                .map { it.file.absolutePath }
+                        )
+                    }
+                if (categoryPaths != null && categoryPaths.size > 1) {
+                    putStringArrayList(ImageViewerActivity.EXTRA_PATHS, categoryPaths)
+                }
+                putString(ImageViewerActivity.EXTRA_FOLDER, file.parent)
+            }
             openFileWithPackage(
                 context,
                 context.packageName,
-                ImageViewerActivity::class.java.name
+                ImageViewerActivity::class.java.name,
+                extras
             )
             return true
         }

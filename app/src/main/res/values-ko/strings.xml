@@ -287,6 +287,7 @@
     <string name="edit_with">편집 앱으로…</string>
     <string name="no_app_found_to_edit_this_image">이 이미지를 편집할 앱을 찾지 못했습니다</string>
     <string name="loading_image">이미지 불러오는 중…</string>
+    <string name="image_position">%1$d / %2$d</string>
     <string name="failed_to_load_image">이미지를 불러오지 못했습니다</string>
     <string name="check_file_exists_and_try_again">파일이 있는지 확인한 뒤 다시 시도하세요</string>
     <string name="retry">다시 시도</string>

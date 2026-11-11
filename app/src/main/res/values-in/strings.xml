@@ -287,6 +287,7 @@
     <string name="edit_with">Edit dengan…</string>
     <string name="no_app_found_to_edit_this_image">Tidak ada aplikasi untuk mengedit gambar ini</string>
     <string name="loading_image">Memuat gambar…</string>
+    <string name="image_position">%1$d dari %2$d</string>
     <string name="failed_to_load_image">Gagal memuat gambar</string>
     <string name="check_file_exists_and_try_again">Periksa apakah berkas ada lalu coba lagi</string>
     <string name="retry">Coba lagi</string>

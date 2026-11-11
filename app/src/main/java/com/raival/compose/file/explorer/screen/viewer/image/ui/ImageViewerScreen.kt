@@ -2,6 +2,7 @@ package com.raival.compose.file.explorer.screen.viewer.image.ui
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -24,12 +25,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.BorderOuter
+import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Edit
@@ -56,6 +60,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +81,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.palette.graphics.Palette
 import coil3.Image
 import coil3.request.ImageRequest
@@ -83,14 +89,68 @@ import coil3.toBitmap
 import com.raival.compose.file.explorer.App.Companion.globalClass
 import com.raival.compose.file.explorer.App.Companion.logger
 import com.raival.compose.file.explorer.R
-import com.raival.compose.file.explorer.common.read
+import com.raival.compose.file.explorer.common.emptyString
 import com.raival.compose.file.explorer.common.showMsg
+import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType
 import com.raival.compose.file.explorer.screen.main.tab.files.ui.dialog.CopiableText
 import com.raival.compose.file.explorer.screen.viewer.ViewerActivity
 import com.raival.compose.file.explorer.screen.viewer.ViewerInstance
+import com.raival.compose.file.explorer.screen.viewer.image.ImageViewerInstance
 import com.raival.compose.file.explorer.screen.viewer.image.misc.ImageInfo
 import com.raival.compose.file.explorer.screen.viewer.image.misc.ImageInfo.Companion.extractImageInfo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import me.saket.telephoto.zoomable.coil3.ZoomableAsyncImage
+import java.io.File
+
+/** Otoritas FileProvider yang dipakai aplikasi, konsisten dengan LocalFileHolder. */
+private const val FILE_PROVIDER_AUTHORITY = "com.raival.compose.file.explorer.provider"
+
+/**
+ * Satu foto dalam galeri. [file] terisi bila fotonya berkas lokal dari folder
+ * yang dibuka file explorer; bila null, fotonya datang dari [uri] app lain.
+ */
+private data class PhotoItem(val file: File?, val uri: Uri) {
+    /** Data untuk Coil: berkas lokal bila ada, uri-nya bila bukan. */
+    val data: Any get() = file ?: uri
+
+    val name: String
+        get() = file?.name ?: uri.lastPathSegment ?: emptyString
+}
+
+private fun fileUri(file: File): Uri =
+    FileProvider.getUriForFile(globalClass, FILE_PROVIDER_AUTHORITY, file)
+
+/**
+ * Daftar foto galeri. Untuk folder, urutannya terlama di depan sehingga
+ * geser kiri menuju foto terbaru dan geser kanan menuju foto terlama.
+ * Prioritas sumbernya:
+ * daftar kategori ([ImageViewerInstance.photoPaths], urutannya persis
+ * seperti tampilan kategori), lalu folder asal, dan bila keduanya tidak
+ * ada (misal dibuka dari app lain) hanya foto yang dibuka.
+ */
+private suspend fun listPhotos(instance: ImageViewerInstance): List<PhotoItem> =
+    withContext(Dispatchers.IO) {
+        runCatching {
+            instance.photoPaths.takeIf { it.isNotEmpty() }
+                ?.mapNotNull { path ->
+                    // Berkas yang sudah tidak ada dilewati supaya tidak
+                    // menyisakan halaman galat di tengah galeri.
+                    File(path).takeIf { it.isFile }
+                        ?.let { PhotoItem(file = it, uri = fileUri(it)) }
+                }
+                ?.takeIf { it.isNotEmpty() }
+                ?: instance.folderPath.takeIf { it.isNotEmpty() }
+                    ?.let { folder ->
+                        File(folder).listFiles { f ->
+                            f.isFile &&
+                                    f.extension.lowercase() in FileMimeType.imageFileType
+                        }?.sortedBy { it.lastModified() }
+                            ?.map { PhotoItem(file = it, uri = fileUri(it)) }
+                            ?.takeIf { it.isNotEmpty() }
+                    }
+        }.getOrNull() ?: listOf(PhotoItem(file = null, uri = instance.uri))
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,7 +165,6 @@ fun ImageViewerScreen(instance: ViewerInstance) {
         Color.Black
     )
     var currentImageBackgroundColorIndex by remember { mutableIntStateOf(0) }
-    var imageData by remember { mutableStateOf(ByteArray(0)) }
     var isLoading by remember { mutableStateOf(true) }
     var isError by remember { mutableStateOf(false) }
     var showControls by remember { mutableStateOf(true) }
@@ -116,24 +175,35 @@ fun ImageViewerScreen(instance: ViewerInstance) {
     var contentScale by remember { mutableStateOf(ContentScale.Fit) }
     val context = LocalContext.current
 
-    // Load image data
+    val imageInstance = instance as? ImageViewerInstance
+    var photos by remember { mutableStateOf<List<PhotoItem>?>(null) }
+    var startIndex by remember { mutableIntStateOf(0) }
+
+    // Mendaftar foto sefolder di thread IO, sekali saat layar dibuka.
     LaunchedEffect(instance.uri) {
-        try {
-            imageData = instance.uri.read()
-            isLoading = false
-        } catch (e: Exception) {
-            logger.logError(e)
-            isError = true
-            isLoading = false
-        }
+        val items = listPhotos(imageInstance ?: ImageViewerInstance(instance.uri, instance.id))
+        startIndex = items.indexOfFirst { it.name == imageInstance?.initialName }.coerceAtLeast(0)
+        photos = items
+        isLoading = false
     }
 
-    // Extract image info when image is loaded
-    LaunchedEffect(imageData, imageDimensions.first) {
-        if (imageData.isNotEmpty() && imageDimensions.first.isNotEmpty()) {
-            imageInfo =
-                extractImageInfo(instance.uri, imageDimensions.first, imageDimensions.second)
-        }
+    val items = photos
+
+    // key membuat state pager dibuat ulang saat daftar foto berubah, supaya
+    // initialPage (foto yang diketuk) diterapkan pada daftar yang sudah siap.
+    val pagerState = key(items) {
+        rememberPagerState(initialPage = startIndex) { items?.size ?: 0 }
+    }
+
+    val current = items?.getOrNull(pagerState.currentPage)
+
+    // Pindah foto: bersihkan keadaan yang khusus untuk satu foto.
+    LaunchedEffect(pagerState.currentPage, items) {
+        rotationAngle = 0f
+        contentScale = ContentScale.Fit
+        isError = false
+        imageDimensions = emptyString to emptyString
+        imageInfo = null
     }
 
     Box(
@@ -150,48 +220,62 @@ fun ImageViewerScreen(instance: ViewerInstance) {
     ) {
         when {
             isLoading -> LoadingState()
-            isError -> ErrorState(onClose = {
+            items.isNullOrEmpty() -> ErrorState(onClose = {
                 (context as? ViewerActivity)?.finish()
             })
 
             else -> {
-                // Main image with zoom and rotation
-                var image by remember { mutableStateOf<Image?>(null) }
+                // Gambar foto yang sedang tampil, untuk ekstraksi warna.
+                var image by remember(items) { mutableStateOf<Image?>(null) }
 
-                ZoomableAsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(instance.uri)
-                        .listener(
-                            onSuccess = { _, state ->
-                                image = state.image
-                                image?.let {
-                                    imageDimensions = "${it.width}" to "${it.height}"
-                                }
-                            },
-                            onError = { _, error ->
-                                logger.logError(error.throwable)
-                                isError = true
-                                isLoading = false
+                HorizontalPager(
+                    state = pagerState,
+                    // Tetangga dimuat duluan supaya geserannya tidak menunggu.
+                    beyondViewportPageCount = 1,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    val item = items[page]
+                    PhotoPage(
+                        item = item,
+                        isCurrent = page == pagerState.currentPage,
+                        rotationAngle = rotationAngle,
+                        contentScale = contentScale,
+                        backgroundColor = imageBackgroundColors[currentImageBackgroundColorIndex],
+                        onToggleControls = { showControls = !showControls },
+                        onLoaded = { loaded, dimensions ->
+                            // Hanya foto yang sedang tampil yang mengatur keadaan layar.
+                            if (page == pagerState.currentPage) {
+                                image = loaded
+                                imageDimensions = dimensions
                             }
-                        ).build(),
-                    contentDescription = null,
-                    contentScale = contentScale,
-                    onClick = {
-                        showControls = !showControls
-                    },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { rotationZ = rotationAngle }
-                        .background(imageBackgroundColors[currentImageBackgroundColorIndex])
-                )
+                        },
+                        onError = { if (page == pagerState.currentPage) isError = true }
+                    )
+                }
 
-                // Extract dominant color
-                LaunchedEffect(image) {
-                    if (image != null) {
-                        val bitmap = image!!.toBitmap().copy(Bitmap.Config.ARGB_8888, false)
-                        val palette = Palette.from(bitmap).generate()
+                // Warna latar diambil dari foto yang sedang tampil.
+                LaunchedEffect(image, pagerState.currentPage) {
+                    val bitmap = image ?: return@LaunchedEffect
+                    runCatching {
+                        val copy = bitmap.toBitmap()
+                            .copy(Bitmap.Config.ARGB_8888, false)
+                        val palette = Palette.from(copy).generate()
                         dominantColor = Color(palette.getDominantColor(defaultColor.toArgb()))
                         secondaryColor = Color(palette.getMutedColor(defaultColor.toArgb()))
+                    }.onFailure { logger.logError(it) }
+                }
+
+                // Info berkas mengikuti foto yang sedang tampil.
+                LaunchedEffect(current, imageDimensions.first) {
+                    val info = current ?: return@LaunchedEffect
+                    if (imageDimensions.first.isNotEmpty()) {
+                        imageInfo = runCatching {
+                            extractImageInfo(
+                                info.uri,
+                                imageDimensions.first,
+                                imageDimensions.second
+                            )
+                        }.getOrNull()
                     }
                 }
 
@@ -258,19 +342,33 @@ fun ImageViewerScreen(instance: ViewerInstance) {
                         title = {
                             Column {
                                 Text(
-                                    text = imageInfo?.name ?: stringResource(R.string.unknown),
+                                    text = current?.name ?: stringResource(R.string.unknown),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Medium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                imageInfo?.let { info ->
-                                    Text(
-                                        text = "${info.size} • ${info.dimensions}",
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                        fontSize = 12.sp
-                                    )
-                                }
+                                Text(
+                                    text = buildString {
+                                        imageInfo?.let { info ->
+                                            append("${info.size} • ${info.dimensions}")
+                                        }
+                                        if (items.size > 1) {
+                                            if (isNotEmpty()) append(" • ")
+                                            append(
+                                                stringResource(
+                                                    R.string.image_position,
+                                                    pagerState.currentPage + 1,
+                                                    items.size
+                                                )
+                                            )
+                                        }
+                                    },
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
                         },
                         navigationIcon = {
@@ -315,10 +413,11 @@ fun ImageViewerScreen(instance: ViewerInstance) {
                             rotationAngle = (rotationAngle + 90f) % 360f
                         },
                         onEdit = {
+                            val uri = current?.uri ?: return@BottomControls
                             val editIntent = Intent(Intent.ACTION_EDIT)
                             val mimeType =
-                                context.contentResolver.getType(instance.uri) ?: "image/*"
-                            editIntent.setDataAndType(instance.uri, mimeType)
+                                context.contentResolver.getType(uri) ?: "image/*"
+                            editIntent.setDataAndType(uri, mimeType)
                             editIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                             val chooser = Intent.createChooser(
                                 editIntent,
@@ -347,6 +446,110 @@ fun ImageViewerScreen(instance: ViewerInstance) {
                     }
                 }
             }
+        }
+
+        // Kegagalan memuat foto yang sedang tampil menampilkan lapisan error
+        // di atas pager, dengan tombol kembali menutup penampil.
+        if (isError && !isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.ErrorOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.failed_to_load_image),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Satu halaman foto di pager. Warna dan kegagalan muat diurus di sini per
+ * foto, sedangkan keadaan layar (rotasi, skala, info) hanya milik halaman
+ * yang sedang tampil. Animasi pindah foto memakai slide bawaan pager.
+ */
+@Composable
+private fun PhotoPage(
+    item: PhotoItem,
+    isCurrent: Boolean,
+    rotationAngle: Float,
+    contentScale: ContentScale,
+    backgroundColor: Color,
+    onToggleControls: () -> Unit,
+    onLoaded: (Image, Pair<String, String>) -> Unit,
+    onError: () -> Unit
+) {
+    var failed by remember(item.uri) { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                // Animasi dasar: slide bawaan pager, hanya rotasi tombol.
+                rotationZ = rotationAngle
+            }
+    ) {
+        if (failed) {
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    Icons.Default.BrokenImage,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.failed_to_load_image),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
+        } else {
+            ZoomableAsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(item.data)
+                    .listener(
+                        onSuccess = { _, state ->
+                            val loaded = state.image
+                            if (loaded != null) {
+                                onLoaded(
+                                    loaded,
+                                    "${loaded.width}" to "${loaded.height}"
+                                )
+                            }
+                        },
+                        onError = { _, error ->
+                            logger.logError(error.throwable)
+                            failed = true
+                            onError()
+                        }
+                    ).build(),
+                contentDescription = null,
+                contentScale = contentScale,
+                onClick = {
+                    // Ketukan hanya berlaku di foto yang sedang tampil.
+                    if (isCurrent) onToggleControls()
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(backgroundColor)
+            )
         }
     }
 }
