@@ -273,6 +273,11 @@
     <string name="path">경로</string>
     <string name="invalid_pdf">잘못된 PDF</string>
     <string name="failed_to_load_pdf">PDF를 불러오지 못했습니다</string>
+    <string name="title_activity_document_viewer">문서 뷰어</string>
+    <string name="document_info">문서 정보</string>
+    <string name="failed_to_read_document">이 문서를 읽지 못했습니다</string>
+    <string name="document_too_large">이 문서는 너무 커서 읽을 수 없습니다 (최대 %1$s)</string>
+    <string name="slide">슬라이드</string>
     <string name="page">%1$d페이지</string>
     <string name="loading_pdf">PDF 불러오는 중…</string>
     <string name="error">오류</string>

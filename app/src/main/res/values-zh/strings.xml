@@ -261,6 +261,11 @@
     <string name="path">路径</string>
     <string name="invalid_pdf">无效PDF</string>
     <string name="failed_to_load_pdf">加载PDF失败</string>
+    <string name="title_activity_document_viewer">文档查看器</string>
+    <string name="document_info">文档信息</string>
+    <string name="failed_to_read_document">无法读取此文档</string>
+    <string name="document_too_large">此文档过大，无法读取（最大 %1$s）</string>
+    <string name="slide">幻灯片</string>
     <string name="page">第 %1$d 页</string>
     <string name="loading_pdf">加载PDF中…</string>
     <string name="error">错误</string>

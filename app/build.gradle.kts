@@ -58,6 +58,7 @@ dependencies {
     // AndroidX - Core & Lifecycle
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.webkit)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose.android)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -113,4 +114,7 @@ dependencies {
     // Root file provider berbasis NIO di proses root (seperti MaterialFiles).
     implementation(libs.libsu.service)
     implementation(libs.libsu.nio)
+    // Pembaca dokumen Microsoft: Word (docx), Excel (xlsx), PowerPoint (pptx).
+    implementation(libs.poi)
+    implementation(libs.poi.ooxml)
 }

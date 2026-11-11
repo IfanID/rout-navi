@@ -273,6 +273,11 @@
     <string name="path">Path</string>
     <string name="invalid_pdf">Invalid PDF</string>
     <string name="failed_to_load_pdf">Failed to load PDF</string>
+    <string name="title_activity_document_viewer">Document Viewer</string>
+    <string name="document_info">Document Info</string>
+    <string name="failed_to_read_document">Failed to read this document</string>
+    <string name="document_too_large">This document is too large to be read (max %1$s)</string>
+    <string name="slide">Slide</string>
     <string name="page">Page %1$d</string>
     <string name="loading_pdf">Loading PDF…</string>
     <string name="error">Error</string>

@@ -135,6 +135,15 @@ object FileMimeType {
         "csv", "tsv", "ini", "conf", "cfg", "nfo", "json", "xml"
     ) + subtitleTextFileType + configFileType + keyFileType
 
+    // Format Office yang dibaca penampil dokumen bawaan (jalur WebView).
+    // Word: docx/docm/dotx, Excel: xlsx/xls/xlsm/xlsb/xltx, PowerPoint: pptx/ppsx/pptm/potx.
+    @JvmField
+    val officeDocumentFileType = arrayOf(
+        "docx", "docm", "dotx",
+        "xlsx", "xls", "xlsm", "xlsb", "xltx",
+        "pptx", "ppsx", "pptm", "potx"
+    )
+
     @JvmField
     val imageFileType = arrayOf(
         "png", "jpeg", "jpg", "heic", "tiff", "gif", "webp", svgFileType, "bmp", "raw"

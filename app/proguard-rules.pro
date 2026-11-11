@@ -26,4 +26,14 @@
 -keep class android.content.** { *; }
 -keep class com.android.apksig.** { *; }
 
+# Apache POI: kelas java.awt dan beberapa API opsional tidak ada di Android,
+# yang dipakai hanya pembacaan dokumen sehingga warning-nya boleh diabaikan.
+-dontwarn java.awt.**
+-dontwarn org.apache.poi.**
+-dontwarn org.openxmlformats.**
+-dontwarn org.etsi.**
+-dontwarn org.w3.**
+-dontwarn com.graphbuilder.**
+-dontwarn javax.xml.stream.**
+
 -keepnames interface * { *; }

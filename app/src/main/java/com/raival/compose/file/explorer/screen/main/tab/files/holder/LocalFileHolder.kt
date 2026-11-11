@@ -27,6 +27,7 @@ import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.
 import com.raival.compose.file.explorer.screen.main.tab.files.misc.FileMimeType.subtitleBinaryFileType
 import com.raival.compose.file.explorer.screen.main.tab.files.provider.RootShell
 import com.raival.compose.file.explorer.screen.viewer.audio.AudioPlayerActivity
+import com.raival.compose.file.explorer.screen.viewer.document.DocumentViewerActivity
 import com.raival.compose.file.explorer.screen.viewer.image.ImageViewerActivity
 import com.raival.compose.file.explorer.screen.viewer.pdf.PdfViewerActivity
 import com.raival.compose.file.explorer.screen.viewer.video.VideoPlayerActivity
@@ -380,6 +381,16 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
                 context,
                 context.packageName,
                 PdfViewerActivity::class.java.name
+            )
+            return true
+        }
+
+        // Dokumen Office modern dibaca oleh penampil dokumen bawaan.
+        if (FileMimeType.officeDocumentFileType.contains(extension)) {
+            openFileWithPackage(
+                context,
+                context.packageName,
+                DocumentViewerActivity::class.java.name
             )
             return true
         }

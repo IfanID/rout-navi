@@ -273,6 +273,11 @@
     <string name="path">Path</string>
     <string name="invalid_pdf">PDF tidak valid</string>
     <string name="failed_to_load_pdf">Gagal memuat PDF</string>
+    <string name="title_activity_document_viewer">Penampil Dokumen</string>
+    <string name="document_info">Info Dokumen</string>
+    <string name="failed_to_read_document">Gagal membaca dokumen ini</string>
+    <string name="document_too_large">Dokumen ini terlalu besar untuk dibaca (maksimal %1$s)</string>
+    <string name="slide">Slide</string>
     <string name="page">Halaman %1$d</string>
     <string name="loading_pdf">Memuat PDF…</string>
     <string name="error">Kesalahan</string>
