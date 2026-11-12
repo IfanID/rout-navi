@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.rounded.ArrowOutward
 import androidx.compose.material.icons.rounded.Bookmarks
 import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.DataUsage
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Storage
@@ -279,6 +280,7 @@ fun HomeSectionType.getIcon(): ImageVector {
     return when (this) {
         HomeSectionType.RECENT_FILES -> Icons.Rounded.History
         HomeSectionType.CATEGORIES -> Icons.Rounded.Category
+        HomeSectionType.STORAGE_ANALYZER -> Icons.Rounded.DataUsage
         HomeSectionType.STORAGE -> Icons.Rounded.Storage
         HomeSectionType.BOOKMARKS -> Icons.Rounded.Bookmarks
         HomeSectionType.RECYCLE_BIN -> Icons.Rounded.DeleteSweep
@@ -291,6 +293,7 @@ fun HomeSectionType.getDescription(): String {
     return when (this) {
         HomeSectionType.RECENT_FILES -> globalClass.getString(R.string.recently_modified_files)
         HomeSectionType.CATEGORIES -> globalClass.getString(R.string.quick_access_categories)
+        HomeSectionType.STORAGE_ANALYZER -> globalClass.getString(R.string.storage_analyzer_desc)
         HomeSectionType.STORAGE -> globalClass.getString(R.string.storage_devices_and_locations)
         HomeSectionType.BOOKMARKS -> globalClass.getString(R.string.bookmarked_files_and_folders)
         HomeSectionType.RECYCLE_BIN -> globalClass.getString(R.string.deleted_files)

@@ -43,6 +43,8 @@ import com.raival.compose.file.explorer.common.isNot
 import com.raival.compose.file.explorer.common.showMsg
 import com.raival.compose.file.explorer.common.toJson
 import com.raival.compose.file.explorer.common.ui.SafeSurface
+import com.raival.compose.file.explorer.screen.analyzer.StorageAnalyzerTab
+import com.raival.compose.file.explorer.screen.analyzer.ui.StorageAnalyzerContentView
 import com.raival.compose.file.explorer.screen.main.tab.apps.AppsTab
 import com.raival.compose.file.explorer.screen.main.tab.apps.ui.AppsTabContentView
 import com.raival.compose.file.explorer.screen.main.tab.files.FilesTab
@@ -328,6 +330,10 @@ class MainActivity : BaseActivity() {
 
                                 is AppsTab -> {
                                     AppsTabContentView(currentTab)
+                                }
+
+                                is StorageAnalyzerTab -> {
+                                    StorageAnalyzerContentView(currentTab)
                                 }
                             }
                         }

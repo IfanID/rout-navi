@@ -488,4 +488,24 @@
     <string name="selection_toggle_on_hint">点按 = 选择</string>
     <string name="selection_toggle_off_hint">点按 = 打开</string>
     <string name="subtitle_bitmap_not_supported">位图字幕（VobSub/PGS）无法在文本编辑器中打开</string>
+    <string name="storage_analyzer">存储分析</string>
+    <string name="storage_analyzer_desc">查找最大的文件夹和文件</string>
+    <string name="total_items">%1$d 项</string>
+    <string name="analyzing_file_count">正在扫描 %1$d 个文件…</string>
+    <string name="scan_again">重新扫描</string>
+    <string name="inaccessible">无法访问</string>
+    <string name="go_up">向上一级</string>
+    <string name="storage_analyzer_empty">此文件夹中没有文件。</string>
+    <string name="storage_percent">%1$s%%</string>
+    <string name="storage_analyzer_failed">扫描失败。请检查存储访问权限，然后重新扫描。</string>
+    <string name="storage_delete_confirm">删除 %1$s？</string>
+    <string name="storage_move_to">移动到…</string>
+    <string name="storage_move_here">移到此处</string>
+    <string name="storage_no_subfolder">没有子文件夹</string>
+    <string name="storage_scanned_size">已扫描大小</string>
+    <string name="storage_selected_count">已选择 %1$d 项</string>
+    <string name="storage_clear_selection">取消选择</string>
+    <string name="storage_delete_multi_confirm">删除 %1$d 项？</string>
+    <string name="storage_move">移动</string>
+    <string name="storage_tools">存储工具</string>
 </resources>

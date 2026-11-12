@@ -488,4 +488,24 @@
     <string name="remember_last_session">Remember last session</string>
     <string name="confirm_before_exit">Confirm before exiting the app</string>
     <string name="subtitle_bitmap_not_supported">Bitmap subtitle (VobSub/PGS) can\'t be opened in the text editor</string>
+    <string name="storage_analyzer">Storage Analyzer</string>
+    <string name="storage_analyzer_desc">Find the largest folders and files</string>
+    <string name="total_items">%1$d items</string>
+    <string name="analyzing_file_count">Scanning %1$d files…</string>
+    <string name="scan_again">Rescan</string>
+    <string name="inaccessible">No access</string>
+    <string name="go_up">Go up one folder</string>
+    <string name="storage_analyzer_empty">This folder has no files.</string>
+    <string name="storage_percent">%1$s%%</string>
+    <string name="storage_analyzer_failed">Scan failed. Check storage access permission, then scan again.</string>
+    <string name="storage_delete_confirm">Delete %1$s?</string>
+    <string name="storage_move_to">Move to…</string>
+    <string name="storage_move_here">Move here</string>
+    <string name="storage_no_subfolder">No subfolders</string>
+    <string name="storage_scanned_size">Scanned size</string>
+    <string name="storage_selected_count">%1$d selected</string>
+    <string name="storage_clear_selection">Clear selection</string>
+    <string name="storage_delete_multi_confirm">Delete %1$d items?</string>
+    <string name="storage_move">Move</string>
+    <string name="storage_tools">Storage tools</string>
 </resources>

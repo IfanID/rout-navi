@@ -29,6 +29,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowOutward
 import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.DataUsage
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material3.HorizontalDivider
@@ -63,6 +65,7 @@ import com.raival.compose.file.explorer.App.Companion.globalClass
 import com.raival.compose.file.explorer.App.Companion.logger
 import com.raival.compose.file.explorer.R
 import com.raival.compose.file.explorer.common.ui.Space
+import com.raival.compose.file.explorer.screen.analyzer.StorageAnalyzerTab
 import com.raival.compose.file.explorer.screen.main.MainActivityManager
 import com.raival.compose.file.explorer.screen.main.tab.files.FilesTab
 import com.raival.compose.file.explorer.screen.main.tab.files.coil.canUseCoil
@@ -171,6 +174,10 @@ fun ColumnScope.HomeTabContentView(tab: HomeTab) {
 
                 HomeSectionType.CATEGORIES -> {
                     CategoriesSection(tab = tab)
+                }
+
+                HomeSectionType.STORAGE_ANALYZER -> {
+                    StorageAnalyzerSection(mainActivityManager = mainActivityManager)
                 }
 
                 HomeSectionType.STORAGE -> {
@@ -507,6 +514,77 @@ private fun CategoriesSection(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun StorageAnalyzerSection(
+    mainActivityManager: MainActivityManager
+) {
+    // Judul sendiri memisahkan blok ini dari grid kategori di atasnya,
+    // sehingga tombol alat tidak terbaca sebagai kategori tambahan.
+    Text(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(top = 4.dp),
+        text = stringResource(R.string.storage_tools),
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable {
+                val root = (StorageProvider.getPrimaryInternalStorage(globalClass).contentHolder
+                        as? LocalFileHolder)?.file
+                if (root != null) {
+                    mainActivityManager.replaceCurrentTabWith(StorageAnalyzerTab(root))
+                }
+            }
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Kotak ikon memberi penanda "alat", bukan ubin kategori.
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.DataUsage,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.storage_analyzer),
+                style = MaterialTheme.typography.titleSmall
+            )
+            Text(
+                text = stringResource(R.string.storage_analyzer_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Icon(
+            imageVector = Icons.Rounded.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

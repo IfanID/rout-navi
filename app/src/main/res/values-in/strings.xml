@@ -488,4 +488,24 @@
     <string name="remember_last_session">Ingat sesi terakhir</string>
     <string name="confirm_before_exit">Konfirmasi sebelum keluar aplikasi</string>
     <string name="subtitle_bitmap_not_supported">Subtitle bitmap (VobSub/PGS) tidak bisa dibuka di editor teks</string>
+    <string name="storage_analyzer">Analisis Penyimpanan</string>
+    <string name="storage_analyzer_desc">Temukan folder dan berkas paling besar</string>
+    <string name="total_items">%1$d item</string>
+    <string name="analyzing_file_count">Memindai %1$d berkas…</string>
+    <string name="scan_again">Pindai ulang</string>
+    <string name="inaccessible">Tidak dapat diakses</string>
+    <string name="go_up">Naik satu folder</string>
+    <string name="storage_analyzer_empty">Folder ini tidak berisi berkas.</string>
+    <string name="storage_percent">%1$s%%</string>
+    <string name="storage_analyzer_failed">Pemindaian gagal. Periksa izin akses penyimpanan, lalu pindai ulang.</string>
+    <string name="storage_delete_confirm">Hapus %1$s?</string>
+    <string name="storage_move_to">Pindah ke…</string>
+    <string name="storage_move_here">Pindah ke folder ini</string>
+    <string name="storage_no_subfolder">Tidak ada subfolder</string>
+    <string name="storage_scanned_size">Ukuran terbaca</string>
+    <string name="storage_selected_count">%1$d dipilih</string>
+    <string name="storage_clear_selection">Batalkan pilihan</string>
+    <string name="storage_delete_multi_confirm">Hapus %1$d item?</string>
+    <string name="storage_move">Pindah</string>
+    <string name="storage_tools">Alat penyimpanan</string>
 </resources>

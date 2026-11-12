@@ -488,4 +488,24 @@
     <string name="remember_last_session">마지막 세션 기억</string>
     <string name="confirm_before_exit">앱을 종료하기 전에 확인</string>
     <string name="subtitle_bitmap_not_supported">비트맵 자막(VobSub/PGS)은 텍스트 편집기에서 열 수 없습니다</string>
+    <string name="storage_analyzer">저장소 분석</string>
+    <string name="storage_analyzer_desc">가장 큰 폴더와 파일 찾기</string>
+    <string name="total_items">%1$d개 항목</string>
+    <string name="analyzing_file_count">%1$d개 파일 검색 중…</string>
+    <string name="scan_again">다시 검색</string>
+    <string name="inaccessible">액세스할 수 없음</string>
+    <string name="go_up">한 폴더 위로</string>
+    <string name="storage_analyzer_empty">이 폴더에 파일이 없습니다.</string>
+    <string name="storage_percent">%1$s%%</string>
+    <string name="storage_analyzer_failed">검색 실패. 저장소 접근 권한을 확인한 후 다시 검색하세요.</string>
+    <string name="storage_delete_confirm">%1$s을(를) 삭제할까요?</string>
+    <string name="storage_move_to">이동 대상…</string>
+    <string name="storage_move_here">여기로 이동</string>
+    <string name="storage_no_subfolder">하위 폴더 없음</string>
+    <string name="storage_scanned_size">검색된 크기</string>
+    <string name="storage_selected_count">%1$d개 선택됨</string>
+    <string name="storage_clear_selection">선택 해제</string>
+    <string name="storage_delete_multi_confirm">%1$d개 항목을 삭제할까요?</string>
+    <string name="storage_move">이동</string>
+    <string name="storage_tools">저장소 도구</string>
 </resources>
