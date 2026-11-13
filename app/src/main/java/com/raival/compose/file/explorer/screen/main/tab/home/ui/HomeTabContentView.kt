@@ -210,11 +210,7 @@ fun PinnedFilesSection(
     mainActivityManager: MainActivityManager
 ) {
     val context = LocalContext.current
-    val pinnedFiles = remember {
-        mutableStateListOf<LocalFileHolder>().apply {
-            addAll(tab.pinnedFiles)
-        }
-    }
+    val pinnedFiles = tab.pinnedFiles
 
     if (pinnedFiles.isNotEmpty()) {
         // Pinned files

@@ -38,7 +38,7 @@ class HomeTab : Tab() {
     val scope = CoroutineScope(Dispatchers.IO)
     override val header = globalClass.getString(R.string.home_tab_header)
     val recentFiles = mutableStateListOf<RecentFile>()
-    val pinnedFiles = arrayListOf<LocalFileHolder>()
+    val pinnedFiles = mutableStateListOf<LocalFileHolder>()
 
     var showCustomizeHomeTabDialog by mutableStateOf(false)
 
