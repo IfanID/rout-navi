@@ -12,8 +12,8 @@ android {
         applicationId = "com.raival.compose.file.explorer"
         minSdk = 31
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.0.1"
+        versionCode = 3
+        versionName = "0.0.3"
 
         // libVLC membawa .so untuk semua ABI dan berukuran besar; build ini
         // hanya untuk perangkat arm64 agar APK tidak membengkak.
