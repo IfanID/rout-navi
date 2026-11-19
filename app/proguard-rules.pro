@@ -26,6 +26,11 @@
 -keep class android.content.** { *; }
 -keep class com.android.apksig.** { *; }
 
+# libVLC memanggil balik kelas Java dari native lewat JNI, jadi nama kelas,
+# method, dan field-nya tidak boleh diubah atau dihapus R8.
+-keep class org.videolan.libvlc.** { *; }
+-keep class org.videolan.libvlc.interfaces.** { *; }
+
 # Apache POI: kelas java.awt dan beberapa API opsional tidak ada di Android,
 # yang dipakai hanya pembacaan dokumen sehingga warning-nya boleh diabaikan.
 -dontwarn java.awt.**
@@ -35,5 +40,14 @@
 -dontwarn org.w3.**
 -dontwarn com.graphbuilder.**
 -dontwarn javax.xml.stream.**
+
+# Dependensi opsional log4j dan POI (OSGi, Saxon, zstd, anotasi build) tidak
+# dipakai di Android, jadi kelas yang hilang saat R8 aman diabaikan.
+-dontwarn aQute.bnd.annotation.**
+-dontwarn com.github.luben.zstd.**
+-dontwarn edu.umd.cs.findbugs.annotations.**
+-dontwarn net.sf.saxon.**
+-dontwarn org.osgi.framework.**
+-dontwarn org.apache.logging.log4j.**
 
 -keepnames interface * { *; }

@@ -53,10 +53,19 @@ object FileMimeType {
         "zip", "jar", "apk", "apks", "rar", "7z", "tar"
     )
 
+    // Daftar mengikuti format yang bisa dibuka libVLC, bukan hanya kontainer
+    // populer, supaya berkas seperti .m2ts, .rmvb, atau .wtv tetap masuk ke
+    // pemutar video dan tidak dianggap berkas tak dikenal.
     @JvmField
     val videoFileType = arrayOf(
-        "mp4", "mov", "avi", "mkv", "wmv", "m4v", "3gp",
-        "webm", "flv", "mpeg", "mpg", "ogv", "mxf", "vob", "ts"
+        "3g2", "3gp", "3gp2", "3gpp", "amv", "asf", "avi", "bik", "divx",
+        "dv", "f4v", "flv", "gvi", "gxf", "h264", "h265", "hdmov", "hevc",
+        "m1v", "m2p", "m2t", "m2ts", "m2v", "m4v", "mj2", "mjpeg", "mjpg",
+        "mkv", "mov", "mp2v", "mp4", "mp4v", "mpe", "mpeg", "mpeg1",
+        "mpeg2", "mpeg4", "mpg", "mpv", "mpv2", "mts", "mxf", "mxg", "nsv",
+        "nut", "nuv", "ogm", "ogv", "ogx", "ps", "rec", "rm", "rmvb", "tod",
+        "tp", "trp", "ts", "tts", "vob", "vro", "webm", "wmv", "wtv",
+        "xesc", "y4m"
     )
 
     @JvmField
@@ -149,10 +158,15 @@ object FileMimeType {
         "png", "jpeg", "jpg", "heic", "tiff", "gif", "webp", svgFileType, "bmp", "raw"
     )
 
+    // Sama seperti daftar video, mencakup format audio yang didukung libVLC.
     @JvmField
     val audioFileType = arrayOf(
-        "mp3", "4mp", "aup", "ogg", "3ga", "m4b", "wav", "acc",
-        "m4a", "flac", "aac", "wma", "aiff", "amr", "midi", "mid", "opus"
+        "3ga", "4mp", "a52", "aac", "ac3", "ac4", "acc", "adt", "adts",
+        "aif", "aifc", "aiff", "amr", "ape", "au", "aup", "caf", "dts",
+        "dtshd", "eac3", "flac", "it", "m4a", "m4b", "m4p", "m4r", "mid",
+        "midi", "mka", "mlp", "mod", "mp1", "mp2", "mp3", "mpa", "mpc",
+        "mpga", "ofr", "ofs", "oga", "ogg", "opus", "ra", "ram", "s3m",
+        "spx", "tta", "w64", "wav", "wax", "wma", "wv", "xa", "xm"
     )
 
     @JvmField

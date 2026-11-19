@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import androidx.core.content.FileProvider
 import com.anggrayudi.storage.file.getBasePath
@@ -282,9 +283,12 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
         context: Context,
         packageName: String,
         className: String,
-        extras: Bundle? = null
+        extras: Bundle? = null,
+        useDirectFileUri: Boolean = false
     ) {
-        val uri = createUri()
+        // Pemutar video dan audio berada di paket yang sama, jadi file:// aman
+        // dipakai dan libVLC bisa membacanya langsung tanpa FileProvider.
+        val uri = if (useDirectFileUri) Uri.fromFile(file) else createUri()
 
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, mimeType)
@@ -356,20 +360,31 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
             return true
         }
 
-        if (FileMimeType.videoFileType.contains(extension)) {
+        // Ekstensi yang tidak terdaftar tetap dikenali dari MIME yang dikirim
+        // sistem, kecuali playlist karena pemutar ini hanya memutar satu berkas.
+        val mime = mimeType.lowercase()
+        val isPlaylistMime = "mpegurl" in mime || "scpls" in mime || "playlist" in mime
+
+        if (FileMimeType.videoFileType.contains(extension) ||
+            (mime.startsWith("video/") && !isPlaylistMime)
+        ) {
             openFileWithPackage(
                 context,
                 context.packageName,
-                VideoPlayerActivity::class.java.name
+                VideoPlayerActivity::class.java.name,
+                useDirectFileUri = true
             )
             return true
         }
 
-        if (FileMimeType.audioFileType.contains(extension)) {
+        if (FileMimeType.audioFileType.contains(extension) ||
+            (mime.startsWith("audio/") && !isPlaylistMime)
+        ) {
             openFileWithPackage(
                 context,
                 context.packageName,
-                AudioPlayerActivity::class.java.name
+                AudioPlayerActivity::class.java.name,
+                useDirectFileUri = true
             )
             return true
         }

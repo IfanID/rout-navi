@@ -16,6 +16,10 @@ abstract class ViewerActivity : BaseActivity() {
     abstract fun onCreateNewInstance(uri: Uri, uid: String): ViewerInstance
     abstract fun onReady(instance: ViewerInstance)
 
+    /** Instance aktif, dipakai subclass untuk menghentikan pemutaran. */
+    protected val activeInstance: ViewerInstance?
+        get() = currentInstance
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -38,10 +42,8 @@ abstract class ViewerActivity : BaseActivity() {
 
         val instance = globalClass.viewersManager.instances.find { it.id == uid }
 
-        if (instance == null) {
-            globalClass.viewersManager.instances.add(
-                onCreateNewInstance(uri!!, uid).also { currentInstance = it }
-            )
+        currentInstance = instance ?: onCreateNewInstance(uri!!, uid).also {
+            globalClass.viewersManager.instances.add(it)
         }
 
         checkPermissions()
@@ -54,6 +56,9 @@ abstract class ViewerActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        // Saat rotasi, instance dipertahankan supaya pemutaran tidak dimulai
+        // dari awal; surface video cukup dipasang ulang oleh activity baru.
+        if (isChangingConfigurations) return
         currentInstance?.onClose()
         globalClass.viewersManager.instances.remove(currentInstance)
     }

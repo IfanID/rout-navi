@@ -14,6 +14,12 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.0.1"
+
+        // libVLC membawa .so untuk semua ABI dan berukuran besar; build ini
+        // hanya untuk perangkat arm64 agar APK tidak membengkak.
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     dependenciesInfo {
@@ -74,8 +80,9 @@ dependencies {
     // Other Jetpack & Android Libraries
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
-    implementation(libs.androidx.media3.ui.compose)
+
+    // Mesin pemutar video, memakai libVLC yang sama dengan aplikasi VLC Android.
+    implementation(libs.libvlc.all)
     implementation(libs.androidx.palette.ktx)
 
     // Sora Code Editor
