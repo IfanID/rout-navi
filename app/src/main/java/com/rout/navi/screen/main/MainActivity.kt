@@ -71,7 +71,7 @@ class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        checkPermissions()
+        checkPermissions(onboardingOnFinish = { onPermissionGranted() })
     }
 
     override fun onPermissionGranted() {

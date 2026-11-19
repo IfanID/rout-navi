@@ -27,6 +27,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -38,31 +42,86 @@ import androidx.core.content.ContextCompat
 import com.rout.navi.App.Companion.globalClass
 import com.rout.navi.R
 import com.rout.navi.common.ui.SafeSurface
+import com.rout.navi.screen.onboarding.OnboardingScreen
 import com.rout.navi.theme.FileExplorerTheme
 
 abstract class BaseActivity : AppCompatActivity() {
+
+    /** Diisi saat onboarding tampil, supaya hasil izin diteruskan ke layar onboarding. */
+    private var permissionResultHandler: ((Boolean) -> Unit)? = null
 
     private val permissionRequestCode = 2027
 
     private val checkPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
-            if (canAccessStorage()) {
-                onPermissionGranted()
-            } else {
-                globalClass.showMsg(R.string.storage_permission_required)
-            }
+            val handler = permissionResultHandler
+            permissionResultHandler = null
+            waitingForOnboardingPermission = false
+            if (handler != null) handler(canAccessStorage())
         }
+
+    /** Menandai layar yang sedang menunggu hasil izin dari setelan sistem. */
+    private var waitingForOnboardingPermission = false
+
+    /**
+     * Setelan izin kadang dikembalikan lewat onResume tanpa memicu launcher.
+     * Kunci yang sama dipakai, jadi hasilnya hanya ditangani sekali.
+     */
+    override fun onResume() {
+        super.onResume()
+        if (!waitingForOnboardingPermission) return
+        val handler = permissionResultHandler
+        permissionResultHandler = null
+        waitingForOnboardingPermission = false
+        if (handler != null) handler(canAccessStorage())
+    }
 
     open fun onPermissionGranted() {}
 
-    protected fun checkPermissions() {
+    /**
+     * Menentukan layar pembuka: onboarding, layar izin lama, atau langsung ke isi.
+     *
+     * [onboardingOnFinish] hanya diisi oleh MainActivity. Layar lain selalu
+     * memakai layar izin lama supaya dibuka tanpa izin tetap aman.
+     */
+    protected fun checkPermissions(onboardingOnFinish: (() -> Unit)? = null) {
         if (canAccessStorage()) {
             onPermissionGranted()
             return
-        } else {
-            enableEdgeToEdge()
-            setContent {
-                FileExplorerTheme {
+        }
+
+        val showOnboarding = onboardingOnFinish != null &&
+                !globalClass.preferencesManager.onboardingCompleted
+
+        enableEdgeToEdge()
+        setContent {
+            FileExplorerTheme {
+                if (showOnboarding) {
+                    // Status izin disimpan sebagai state Compose, dibaca ulang
+                    // setelah kembali dari setelan, sehingga halaman tetap di
+                    // langkah 3 lalu berubah menjadi bertanda centang.
+                    var storageGranted by remember { mutableIntStateOf(if (canAccessStorage()) 1 else 0) }
+
+                    OnboardingScreen(
+                        canAccessStorage = storageGranted == 1,
+                        onGrantPermission = {
+                            waitingForOnboardingPermission = true
+                            permissionResultHandler = { granted ->
+                                android.util.Log.d("RoutOnboarding", "izin dikembalikan: granted=$granted")
+                                storageGranted = if (granted) 1 else 0
+                                if (!granted) {
+                                    globalClass.showMsg(R.string.storage_permission_required)
+                                }
+                            }
+                            grantStoragePermissions()
+                        },
+                        onFinish = {
+                            globalClass.preferencesManager.onboardingCompleted = true
+                            onboardingOnFinish.invoke()
+                        },
+                        onExit = { finish() }
+                    )
+                } else {
                     StoragePermissionScreen(
                         onGrantPermission = { grantStoragePermissions() },
                         onSkip = { finish() }

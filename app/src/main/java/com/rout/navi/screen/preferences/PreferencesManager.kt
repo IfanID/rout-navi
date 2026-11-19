@@ -114,6 +114,13 @@ class PreferencesManager {
         getPreferencesKey = { booleanPreferencesKey(it) }
     )
 
+    /** Penyambutan pertama dibaca sinkron saat aktivitas dibuka. */
+    var onboardingCompleted by prefMutableState(
+        keyName = "onboardingCompleted",
+        defaultValue = false,
+        getPreferencesKey = { booleanPreferencesKey(it) }
+    )
+
     var rememberLastSession by prefMutableState(
         keyName = "rememberLastSession",
         defaultValue = false,

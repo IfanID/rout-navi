@@ -558,4 +558,17 @@
     <string name="video_tracks">Audio dan subtitle</string>
     <string name="video_more_options">Opsi lainnya</string>
     <string name="video_add_subtitle">Tambah subtitle</string>
+    <string name="onboarding_welcome_title">Selamat datang di Rout Navi</string>
+    <string name="onboarding_welcome_body">Pengelola berkas untuk membuka, menata, dan memindahkan berkas di perangkat ini.</string>
+    <string name="onboarding_features_title">Semua di satu tempat</string>
+    <string name="onboarding_features_body">Kelola berkas, putar video, buka gambar dan PDF, serta sunting teks tanpa berpindah aplikasi.</string>
+    <string name="onboarding_ready_title">Siap dipakai</string>
+    <string name="onboarding_ready_body">Setelan bisa diubah kapan saja di menu Preferensi.</string>
+    <string name="onboarding_back">Kembali</string>
+    <string name="onboarding_exit">Keluar</string>
+    <string name="onboarding_swipe_hint">Geser untuk melanjutkan</string>
+    <string name="onboarding_permission_title">Akses Penyimpanan Diberikan</string>
+    <string name="onboarding_permission_body">Rout Navi sekarang bisa membaca dan menata berkas di perangkat ini.</string>
+    <string name="onboarding_permission_granted">Geser untuk melanjutkan</string>
+    <string name="onboarding_start">Mulai</string>
 </resources>

@@ -558,4 +558,17 @@
     <string name="video_tracks">Audio and subtitles</string>
     <string name="video_more_options">More options</string>
     <string name="video_add_subtitle">Add subtitle</string>
+    <string name="onboarding_welcome_title">Welcome to Rout Navi</string>
+    <string name="onboarding_welcome_body">A file manager for opening, organizing, and moving files on this device.</string>
+    <string name="onboarding_features_title">Everything in one place</string>
+    <string name="onboarding_features_body">Manage files, play video, open images and PDFs, and edit text without switching apps.</string>
+    <string name="onboarding_ready_title">Ready to use</string>
+    <string name="onboarding_ready_body">Settings can be changed anytime in Preferences.</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_exit">Exit</string>
+    <string name="onboarding_swipe_hint">Swipe to continue</string>
+    <string name="onboarding_permission_title">Storage Access Granted</string>
+    <string name="onboarding_permission_body">Rout Navi can now read and organize files on this device.</string>
+    <string name="onboarding_permission_granted">Swipe to continue</string>
+    <string name="onboarding_start">Start</string>
 </resources>
