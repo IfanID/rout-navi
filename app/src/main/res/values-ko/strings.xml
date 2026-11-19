@@ -517,6 +517,7 @@
     <string name="video_player_settings">플레이어 설정</string>
     <string name="video_player_settings_desc">제스처, 자막, 속도</string>
     <string name="video_playback_failed">재생에 실패했습니다. 지원하지 않는 형식이거나 파일이 손상되었습니다.</string>
+    <string name="video_format_needs_full_version">이 형식은 libVLC 엔진이 포함된 정식 버전이 필요합니다.</string>
     <string name="video_audio_track">오디오 트랙</string>
     <string name="video_subtitle_track">자막</string>
     <string name="video_track_none">끔</string>

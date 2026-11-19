@@ -59,7 +59,16 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
 
 #### 🎥 Pemutar Video
 
-- Mesin ganda: **Media3 ExoPlayer** sebagai mesin utama dan **libVLC** sebagai cadangan untuk berkas yang tidak didukung perangkat.
+Aplikasi dirilis dalam dua versi dari satu kode sumber. Keduanya punya HUD, gestur, dan setelan pemutar yang sama; bedanya hanya mesin cadangan yang ikut dikemas.
+
+| Versi | Isi | Ukuran APK | Berkas | Cakupan format |
+|---|---|---|---|---|
+| **Media3** (utama) | Media3 ExoPlayer | sekitar 19 MB | `File.Explorer-release.apk` | MP4, MKV, WebM, MP3, FLAC |
+| **VLC** | Media3 ExoPlayer + libVLC | sekitar 72 MB | `File.Explorer-vlc-release.apk` | semua format di atas, ditambah RMVB, WMV, AVI, FLV, AC3, DTS |
+
+Kedua versi tampil dengan nama **Rout Navi** di launcher. Hanya satu yang bisa terpasang pada satu waktu; memasang versi lain menggantikan yang sedang terpasang, dan data aplikasi tetap dipertahankan.
+
+- Mesin ganda pada versi VLC: **Media3 ExoPlayer** sebagai mesin utama dan **libVLC** sebagai cadangan untuk berkas yang tidak didukung perangkat.
 - Mesin dipilih dari ekstensi berkas, sehingga berkas yang jelas hanya bisa diputar libVLC tidak dicoba dua kali oleh Media3.
 - Percepatan tahan layar 2x berjalan mulus tanpa jeda audio pada berkas yang diputar Media3, karena perubahan kecepatan memakai pemroses tempo Sonic.
 - HUD mengikuti susunan VLC: tombol kembali, judul, tombol track, ikon mode skala, menu tiga titik, baris seek dengan pratinjau waktu, serta baris putar, lompat 10 detik, dan putar berikutnya.
@@ -72,12 +81,7 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
 - Audio berhenti seketika saat pemutar ditutup, dan fokus audio dikembalikan ke sistem.
 - Log pemutar ditulis ke `.prism/logs/video-player.log` untuk menelusuri mesin yang dipakai beserta masalah pemutaran.
 
-| Kelompok berkas | Mesin | Tahan layar 2x |
-|---|---|---|
-| MP4, MKV, WebM, TS, MP3, FLAC, dan sejenisnya | Media3 | mulus, tanpa jeda |
-| RMVB, WMV, AVI, FLV, AC3, DTS, dan format langka | libVLC | ada jeda singkat bawaan mesin |
-
-Catatan: `media3-decoder-ffmpeg` belum disertakan, jadi MKV beraudio AC3, EAC3, atau DTS masih diputar lewat libVLC.
+Catatan: `media3-decoder-ffmpeg` belum disertakan, jadi MKV beraudio AC3, EAC3, atau DTS hanya bisa diputar di versi VLC.
 
 #### 🗜️ Arsip ZIP, 7Z, TAR, dan RAR
 

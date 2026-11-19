@@ -22,6 +22,20 @@ android {
         }
     }
 
+    // Dua varian dari satu kode sumber: media3 hanya Media3, vlc menambah libVLC.
+    // Keduanya memakai applicationId yang sama, sehingga hanya satu yang bisa
+    // terpasang di perangkat; memasang yang lain menggantikannya.
+    flavorDimensions += "engine"
+
+    productFlavors {
+        create("media3") {
+            dimension = "engine"
+        }
+        create("vlc") {
+            dimension = "engine"
+        }
+    }
+
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
@@ -36,6 +50,7 @@ android {
             )
         }
     }
+
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
 
@@ -82,10 +97,10 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
 
-    // Mesin pemutar video, memakai libVLC yang sama dengan aplikasi VLC Android.
-    // Dipakai sebagai cadangan bila ExoPlayer tidak mendukung format berkas.
-    implementation(libs.libvlc.all)
+    // Mesin pemutar video: Media3 untuk semua varian, libVLC hanya untuk varian
+    // vlc. libVLC dipakai sebagai cadangan format yang tidak didukung perangkat.
     implementation(libs.androidx.palette.ktx)
+    "vlcImplementation"(libs.libvlc.all)
 
     // Sora Code Editor
     implementation(libs.sora.editor)

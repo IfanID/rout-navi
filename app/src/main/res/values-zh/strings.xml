@@ -517,6 +517,7 @@
     <string name="video_player_settings">播放器设置</string>
     <string name="video_player_settings_desc">手势、字幕和速度</string>
     <string name="video_playback_failed">播放失败。此格式不受支持或文件已损坏。</string>
+    <string name="video_format_needs_full_version">此格式需要包含 libVLC 引擎的完整版本。</string>
     <string name="video_audio_track">音轨</string>
     <string name="video_subtitle_track">字幕</string>
     <string name="video_track_none">关闭</string>

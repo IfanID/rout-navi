@@ -7,10 +7,12 @@ import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
 import com.raival.compose.file.explorer.App.Companion.globalClass
+import com.raival.compose.file.explorer.R
 import com.raival.compose.file.explorer.screen.viewer.ViewerInstance
 import com.raival.compose.file.explorer.screen.viewer.video.engine.EngineChoice
+import com.raival.compose.file.explorer.screen.viewer.video.engine.EngineFactory
+import com.raival.compose.file.explorer.screen.viewer.video.engine.EngineFactoryProvider
 import com.raival.compose.file.explorer.screen.viewer.video.engine.FormatSupport
-import com.raival.compose.file.explorer.screen.viewer.video.engine.LibVlcEngine
 import com.raival.compose.file.explorer.screen.viewer.video.engine.Media3Engine
 import com.raival.compose.file.explorer.screen.viewer.video.engine.PlaybackEngine
 import com.raival.compose.file.explorer.screen.viewer.video.model.VideoPlayerState
@@ -32,8 +34,9 @@ import kotlinx.coroutines.launch
  * YouTube. Bila berkasnya tidak didukung ExoPlayer, pemutar berpindah ke
  * libVLC yang cakupan formatnya seluas aplikasi VLC.
  *
- * Lapisan Compose hanya berbicara dengan kelas ini, jadi perilaku UI sama
- * untuk kedua mesin.
+ * Mesin mana yang tersedia ditentukan [engineFactory], yang isinya berbeda per
+ * varian aplikasi. Lapisan Compose hanya berbicara dengan kelas ini, jadi
+ * perilaku UI sama untuk semua mesin.
  */
 class VideoPlayerInstance(
     override val uri: Uri,
@@ -54,6 +57,13 @@ class VideoPlayerInstance(
 
     private var engine: PlaybackEngine? = null
     private var closed = false
+
+    /**
+     * Perkakas mesin sesuai varian aplikasi. Varian dipilih Gradle lewat
+     * [EngineFactoryProvider], sehingga kode bersama ini tidak merujuk kelas
+     * libVLC sama sekali. Kelas libVLC hanya ada di varian vlc.
+     */
+    private val engineFactory: EngineFactory = EngineFactoryProvider.get()
 
     // Gerbang format: berkas yang jelas hanya bisa diputar libVLC tidak
     // dilewatkan Media3 sama sekali.
@@ -106,26 +116,46 @@ class VideoPlayerInstance(
     private fun ensureEngine(): PlaybackEngine? {
         engine?.let { return it }
         val context = appContext ?: return null
-        val created = createEngine(context)
+        val created = createEngine(context) ?: return null
         engine = created
         engineLocked = true
         VideoPlayerLog.info(
             "mesin dipilih: ${
-                if (created is LibVlcEngine) "libvlc" else "media3"
+                if (created is Media3Engine) "media3" else engineFactory.fallbackName
             } (ekstensi=${FormatSupport.extensionOf(uri) ?: "tidak ada"})"
         )
         host?.let { created.attachHost(it) }
         return created
     }
 
-    private fun createEngine(context: Context): PlaybackEngine =
+    /**
+     * Mesin awal untuk berkas ini. Hasil `null` berarti formatnya hanya bisa
+     * diputar mesin cadangan, tetapi varian ini tidak membawanya.
+     */
+    private fun createEngine(context: Context): PlaybackEngine? =
         if (useVlcOnly) {
-            LibVlcEngine(context, uri, _playerState)
+            engineFactory.createFallback(context, uri, _playerState) ?: run {
+                showEngineUnavailable()
+                null
+            }
         } else {
-            Media3Engine(context, uri, _playerState) {
+            engineFactory.createMedia3(context, uri, _playerState) {
                 mainHandler.post { scope.launch { switchToVlc() } }
             }
         }
+
+    /** Pesan untuk berkas yang butuh mesin cadangan yang tidak ikut dikemas. */
+    private fun showEngineUnavailable() {
+        VideoPlayerLog.info("format butuh mesin cadangan, varian ini tidak membawanya")
+        _playerState.update {
+            it.copy(
+                isLoading = false,
+                isReady = false,
+                isPlaying = false,
+                error = globalClass.getString(R.string.video_format_needs_full_version)
+            )
+        }
+    }
 
     /** Memindahkan pemutaran ke libVLC setelah Media3 menyerah. */
     private suspend fun switchToVlc() {
@@ -134,9 +164,18 @@ class VideoPlayerInstance(
         if (switchInProgress) return
         if (useVlcOnly) return
         if (engine !is Media3Engine && engine != null) return
+        // Varian ringan tidak punya cadangan; beri pesan alih-alih gagal diam.
+        val context = appContext ?: return
+        if (engineFactory.createFallback(context, uri, _playerState) == null) {
+            engine?.release()
+            engine = null
+            host?.removeAllViews()
+            showEngineUnavailable()
+            return
+        }
         switchInProgress = true
         useVlcOnly = true
-        VideoPlayerLog.info("pindah mesin: media3 ke libvlc")
+        VideoPlayerLog.info("pindah mesin: media3 ke ${engineFactory.fallbackName}")
 
         engine?.release()
         engine = null
@@ -157,14 +196,18 @@ class VideoPlayerInstance(
             )
         }
 
-        val context = appContext ?: return
-        val vlc = LibVlcEngine(context, uri, _playerState)
-        engine = vlc
-        host?.let { vlc.attachHost(it) }
-        vlc.prepare()
+        val fallback = engineFactory.createFallback(context, uri, _playerState)
+        if (fallback == null) {
+            showEngineUnavailable()
+            switchInProgress = false
+            return
+        }
+        engine = fallback
+        host?.let { fallback.attachHost(it) }
+        fallback.prepare()
         // Kecepatan dan mute yang sedang aktif dibawa ke mesin baru.
-        _playerState.value.playbackSpeed.let { if (it != 1f) vlc.setSpeed(it) }
-        if (_playerState.value.isMuted) vlc.setMuted(true)
+        _playerState.value.playbackSpeed.let { if (it != 1f) fallback.setSpeed(it) }
+        if (_playerState.value.isMuted) fallback.setMuted(true)
     }
 
     // ------------------------------------------------------------- perintah

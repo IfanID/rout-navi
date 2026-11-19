@@ -517,6 +517,7 @@
     <string name="video_player_settings">Setelan pemutar</string>
     <string name="video_player_settings_desc">Gestur, subtitle, dan kecepatan</string>
     <string name="video_playback_failed">Pemutaran gagal. Format ini tidak didukung atau berkas rusak.</string>
+    <string name="video_format_needs_full_version">Format ini memerlukan versi penuh yang menyertakan mesin libVLC.</string>
     <string name="video_audio_track">Track audio</string>
     <string name="video_subtitle_track">Subtitle</string>
     <string name="video_track_none">Nonaktif</string>

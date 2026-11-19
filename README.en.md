@@ -59,7 +59,16 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
 
 #### 🎥 Video Player
 
-- Dual engine: **Media3 ExoPlayer** as the primary engine and **libVLC** as the fallback for files the device cannot handle.
+The app ships in two versions from one codebase. Both share the same HUD, gestures, and player settings; only the bundled fallback engine differs.
+
+| Version | Contents | APK size | File | Format coverage |
+|---|---|---|---|---|
+| **Media3** (primary) | Media3 ExoPlayer | around 19 MB | `File.Explorer-release.apk` | MP4, MKV, WebM, MP3, FLAC |
+| **VLC** | Media3 ExoPlayer + libVLC | around 72 MB | `File.Explorer-vlc-release.apk` | everything above, plus RMVB, WMV, AVI, FLV, AC3, DTS |
+
+Both versions show the name **Rout Navi** in the launcher. Only one can be installed at a time; installing the other replaces the current one, and app data is kept.
+
+- Dual engine in the VLC version: **Media3 ExoPlayer** as the primary engine and **libVLC** as the fallback for files the device cannot handle.
 - The engine is chosen from the file extension, so files that only libVLC can play are never tried twice by Media3.
 - Hold-to-speed 2x runs without audio gaps on files played by Media3, because speed changes use the Sonic tempo processor.
 - HUD follows the VLC layout: back button, title, track button, scale-mode icon, three-dot menu, seek bar with time preview, plus play, rewind 10, forward 10, and next buttons.
@@ -72,12 +81,7 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
 - Audio stops the moment the player closes, and audio focus is returned to the system.
 - Player logs are written to `.prism/logs/video-player.log` to trace which engine is used along with playback problems.
 
-| File group | Engine | Hold to 2x |
-|---|---|---|
-| MP4, MKV, WebM, TS, MP3, FLAC, and similar | Media3 | smooth, no gap |
-| RMVB, WMV, AVI, FLV, AC3, DTS, and rare formats | libVLC | short gap native to the engine |
-
-Note: `media3-decoder-ffmpeg` is not bundled yet, so MKV files with AC3, EAC3, or DTS audio still play through libVLC.
+Note: `media3-decoder-ffmpeg` is not bundled yet, so MKV files with AC3, EAC3, or DTS audio only play in the VLC version.
 
 #### 🗜️ ZIP, 7Z, TAR, and RAR Archives
 
