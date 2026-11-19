@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.raival.compose.file.explorer"
+    namespace = "com.rout.navi"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.raival.compose.file.explorer"
+        applicationId = "com.rout.navi"
         minSdk = 31
         targetSdk = 36
         versionCode = 3

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # Build dua varian aplikasi lalu PINDAHKAN APK-nya ke storage HP.
-#   media3 -> File.Explorer-<mode>.apk          (Media3 saja, nama lama)
-#   vlc    -> File.Explorer-vlc-<mode>.apk      (Media3 + libVLC)
+#   media3 -> RoutNavi-<mode>.apk               (Media3 saja)
+#   vlc    -> RoutNavi-vlc-<mode>.apk           (Media3 + libVLC)
 #
 # Kedua varian memakai applicationId yang sama, jadi hanya satu yang bisa
 # terpasang di perangkat; memasang yang lain menggantikannya.
@@ -95,12 +95,11 @@ for flavor in media3 vlc; do
             apk="$apk_isi"
             echo "APK $flavor ditandatangani."
         fi
-        # Varian utama memakai nama berkas lama agar tautan unduhan yang sudah
-        # beredar tetap berfungsi; varian vlc diberi akhiran sendiri.
+        # Nama mengikuti nama aplikasi; varian vlc diberi akhiran sendiri.
         if [ "$flavor" = "media3" ]; then
-            nama_berkas="File.Explorer-$mode.apk"
+            nama_berkas="RoutNavi-$mode.apk"
         else
-            nama_berkas="File.Explorer-$flavor-$mode.apk"
+            nama_berkas="RoutNavi-$flavor-$mode.apk"
         fi
         cp -f "$apk" "$tujuan/$nama_berkas"
         rm -f "$apk"

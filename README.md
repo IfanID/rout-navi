@@ -63,8 +63,8 @@ Aplikasi dirilis dalam dua versi dari satu kode sumber. Keduanya punya HUD, gest
 
 | Versi | Isi | Ukuran APK | Berkas | Cakupan format |
 |---|---|---|---|---|
-| **Media3** (utama) | Media3 ExoPlayer | sekitar 19 MB | `File.Explorer-release.apk` | MP4, MKV, WebM, MP3, FLAC |
-| **VLC** | Media3 ExoPlayer + libVLC | sekitar 72 MB | `File.Explorer-vlc-release.apk` | semua format di atas, ditambah RMVB, WMV, AVI, FLV, AC3, DTS |
+| **Media3** (utama) | Media3 ExoPlayer | sekitar 19 MB | `RoutNavi-release.apk` | MP4, MKV, WebM, MP3, FLAC |
+| **VLC** | Media3 ExoPlayer + libVLC | sekitar 72 MB | `RoutNavi-vlc-release.apk` | semua format di atas, ditambah RMVB, WMV, AVI, FLV, AC3, DTS |
 
 Kedua versi tampil dengan nama **Rout Navi** di launcher. Hanya satu yang bisa terpasang pada satu waktu; memasang versi lain menggantikan yang sedang terpasang, dan data aplikasi tetap dipertahankan.
 

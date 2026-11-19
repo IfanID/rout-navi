@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.raival.compose.file.baselineprofile"
+    namespace = "com.rout.navi.baselineprofile"
     compileSdk = 37
 
     compileOptions {

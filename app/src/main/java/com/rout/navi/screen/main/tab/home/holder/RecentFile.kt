@@ -1,0 +1,11 @@
+package com.rout.navi.screen.main.tab.home.holder
+
+import com.rout.navi.screen.main.tab.files.holder.LocalFileHolder
+import java.io.File
+
+data class RecentFile(
+    val name: String,
+    val path: String,
+    val lastModified: Long,
+    val file: LocalFileHolder = LocalFileHolder(File(path))
+)

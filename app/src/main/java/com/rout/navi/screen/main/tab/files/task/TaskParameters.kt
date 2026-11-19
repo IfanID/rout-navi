@@ -1,0 +1,32 @@
+package com.rout.navi.screen.main.tab.files.task
+
+import com.rout.navi.screen.main.tab.files.holder.ContentHolder
+
+interface TaskParameters
+
+data class CopyTaskParameters(
+    val destHolder: ContentHolder
+) : TaskParameters
+
+class DeleteTaskParameters : TaskParameters
+
+data class CompressTaskParameters(
+    val destPath: String,
+    val format: CompressFormat = CompressFormat.ZIP
+) : TaskParameters
+
+data class ExtractTaskParameters(
+    val destinationPath: String,
+    val password: String?
+) : TaskParameters
+
+data class RenameTaskParameters(
+    val newName: String,
+    val toFind: String,
+    val toReplace: String,
+    val useRegex: Boolean
+) : TaskParameters
+
+data class ApksMergeTaskParameters(
+    val autoSign: Boolean
+) : TaskParameters

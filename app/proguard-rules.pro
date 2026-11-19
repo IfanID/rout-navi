@@ -20,7 +20,7 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--keep class com.raival.compose.file.explorer.** { *; }
+-keep class com.rout.navi.** { *; }
 -keep class org.eclipse.tm4e.** { *; }
 -keep class org.joni.** { *; }
 -keep class android.content.** { *; }

@@ -204,7 +204,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.raival.compose.file.explorer.provider"
+            android:authorities="com.rout.navi.provider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
