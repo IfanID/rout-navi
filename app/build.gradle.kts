@@ -80,8 +80,10 @@ dependencies {
     // Other Jetpack & Android Libraries
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 
     // Mesin pemutar video, memakai libVLC yang sama dengan aplikasi VLC Android.
+    // Dipakai sebagai cadangan bila ExoPlayer tidak mendukung format berkas.
     implementation(libs.libvlc.all)
     implementation(libs.androidx.palette.ktx)
 

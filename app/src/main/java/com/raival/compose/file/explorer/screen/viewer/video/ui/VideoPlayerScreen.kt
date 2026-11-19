@@ -5,6 +5,7 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.net.Uri
+import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -59,7 +60,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import org.videolan.libvlc.util.VLCVideoLayout
 import com.raival.compose.file.explorer.R
 import com.raival.compose.file.explorer.common.findActivity
 import com.raival.compose.file.explorer.common.toFormattedTime
@@ -194,17 +194,17 @@ fun VideoPlayerScreen(
                 }
             }
 
-            // Layout video dipasang lebih dulu, lalu media diputar setelahnya.
-            // Urutan ini yang dipakai VLC android; urutan terbalik membuat
-            // libVLC membuka output video berulang tanpa tujuan.
+            // Host kosong tempat mesin pemutar memasang view videonya sendiri.
+            // ExoPlayer memakai PlayerView, libVLC memakai VLCVideoLayout,
+            // sehingga lapisan Compose tidak perlu tahu mesin mana yang aktif.
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { viewContext: Context ->
-                    VLCVideoLayout(viewContext).also { layout ->
-                        videoPlayerInstance.attachLayout(layout)
+                    FrameLayout(viewContext).also { host ->
+                        videoPlayerInstance.attachHost(host)
                     }
                 },
-                onRelease = { layout -> videoPlayerInstance.releaseLayout(layout) }
+                onRelease = { videoPlayerInstance.releaseHost() }
             )
 
             CompositionLocalProvider(LocalViewConfiguration provides fastPlayViewConfiguration) {
