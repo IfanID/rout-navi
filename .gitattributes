@@ -1,0 +1,6 @@
+# Pustaka penampil dokumen di WebView berasal dari proyek lain.
+# Ditandai vendored supaya statistik bahasa GitHub tidak menghitungnya
+# sebagai kode yang ditulis di repo ini. Berkasnya tetap ikut build.
+app/src/main/assets/viewer/lib/** linguist-vendored
+*.min.js linguist-vendored
+*.min.mjs linguist-vendored

@@ -57,6 +57,28 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
 - Subtitle/closed-caption icons and plain-text fallback when a grammar fails to load.
 - Interface languages: English (default), Indonesian (`values-in`), Korean (`values-ko`), and Chinese (`values-zh`).
 
+#### 🎥 Video Player
+
+- Dual engine: **Media3 ExoPlayer** as the primary engine and **libVLC** as the fallback for files the device cannot handle.
+- The engine is chosen from the file extension, so files that only libVLC can play are never tried twice by Media3.
+- Hold-to-speed 2x runs without audio gaps on files played by Media3, because speed changes use the Sonic tempo processor.
+- HUD follows the VLC layout: back button, title, track button, scale-mode icon, three-dot menu, seek bar with time preview, plus play, rewind 10, forward 10, and next buttons.
+- Full gesture set: vertical drag for volume or brightness, horizontal drag to seek, double tap on the edges to jump, two-finger pinch to zoom, and hold to play at 2x.
+- Control lock through the icon next to the track button, with the unlock button at the bottom center.
+- Audio and subtitle track panels, the more-options menu, and the speed picker appear as small menus above their buttons rather than full dialogs.
+- Player settings open as an overlay on the same screen, sized to its content, and can be dragged down to close.
+- Sidecar subtitles load automatically (`srt`, `ass`, `ssa`, `vtt`, `smi`, `ttml`), and external subtitles can be picked from storage.
+- Video scale modes: best fit, fit screen, fill, and original size.
+- Audio stops the moment the player closes, and audio focus is returned to the system.
+- Player logs are written to `.prism/logs/video-player.log` to trace which engine is used along with playback problems.
+
+| File group | Engine | Hold to 2x |
+|---|---|---|
+| MP4, MKV, WebM, TS, MP3, FLAC, and similar | Media3 | smooth, no gap |
+| RMVB, WMV, AVI, FLV, AC3, DTS, and rare formats | libVLC | short gap native to the engine |
+
+Note: `media3-decoder-ffmpeg` is not bundled yet, so MKV files with AC3, EAC3, or DTS audio still play through libVLC.
+
 #### 🗜️ ZIP, 7Z, TAR, and RAR Archives
 
 - Extract archives to the current folder, into a dedicated archive folder, or to a chosen destination path.
@@ -169,7 +191,7 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
 - **Android Version**: 12.0 (API 31) or higher
 - **Permissions**: Storage access (`MANAGE_EXTERNAL_STORAGE` to manage all files; can be revoked at any time)
 - **Root (optional)**: only needed to browse system areas through the root service
-- **Architecture**: arm64-v8a, armeabi-v7a, x86, and x86_64
+- **Architecture**: arm64-v8a (libVLC for other architectures is not bundled to keep the APK small)
 - **Current version**: 0.0.1 (versionCode 1)
 
 ---
@@ -185,6 +207,8 @@ Summary of the features built in this fork, from commit `068ad33` up to the late
 | ![Gradle](https://img.shields.io/badge/Gradle-02303A?style=flat&logo=gradle&logoColor=white)                             | **Build Tool**           | 9.8.2          |
 | ![Android Gradle Plugin](https://img.shields.io/badge/AGP-3DDC84?style=flat&logo=android&logoColor=white)                 | **Android Plugin**       | 9.5.0          |
 | ![OpenJDK](https://img.shields.io/badge/JDK-ED8B00?style=flat&logo=openjdk&logoColor=white)                              | **Build Runtime**        | 25 (LTS)       |
+| ![Media3](https://img.shields.io/badge/Media3-4285F4?style=flat&logo=android&logoColor=white)                              | **Primary Player Engine** | 1.11.1        |
+| ![libVLC](https://img.shields.io/badge/libVLC-FF8800?style=flat&logo=vlcmediaplayer&logoColor=white)                       | **Fallback Player Engine** | 3.7.7        |
 
 ---
 
@@ -226,16 +250,16 @@ This section is **not a requirement** — it only applies when building on an AR
 
 ## 🤝 Contributing
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
+- Report bugs or request features through **Issues**.
+- Send code proposals through a **Pull Request** from your fork.
+
+Improvements that are not specific to this fork should also be sent to the original [Prism File Explorer](https://github.com/Raival-e/Prism-File-Explorer).
 
 ### 📝 **Development Guidelines**
 
 - Follow Kotlin coding conventions
-- Write meaningful commit messages
+- Write meaningful commit messages and explain the reason for the change
+- Run `./gradlew :app:compileDebugKotlin` before opening a Pull Request
 
 ---
 

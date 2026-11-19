@@ -8,6 +8,8 @@ import android.os.Looper
 import android.view.ViewGroup
 import com.raival.compose.file.explorer.App.Companion.globalClass
 import com.raival.compose.file.explorer.screen.viewer.ViewerInstance
+import com.raival.compose.file.explorer.screen.viewer.video.engine.EngineChoice
+import com.raival.compose.file.explorer.screen.viewer.video.engine.FormatSupport
 import com.raival.compose.file.explorer.screen.viewer.video.engine.LibVlcEngine
 import com.raival.compose.file.explorer.screen.viewer.video.engine.Media3Engine
 import com.raival.compose.file.explorer.screen.viewer.video.engine.PlaybackEngine
@@ -51,8 +53,17 @@ class VideoPlayerInstance(
     private var host: ViewGroup? = null
 
     private var engine: PlaybackEngine? = null
-    private var useVlcOnly = false
     private var closed = false
+
+    // Gerbang format: berkas yang jelas hanya bisa diputar libVLC tidak
+    // dilewatkan Media3 sama sekali.
+    private val engineChoice = FormatSupport.choose(uri)
+
+    // Mesin dipilih sekali. Setelah terkunci, hanya boleh berpindah satu arah
+    // dari Media3 ke libVLC, dan hanya sekali.
+    private var engineLocked = false
+    private var useVlcOnly = engineChoice == EngineChoice.VLC
+    private var switchInProgress = false
 
     private var audioManager: AudioManager? = null
 
@@ -65,11 +76,13 @@ class VideoPlayerInstance(
     fun attachHost(newHost: ViewGroup) {
         if (host === newHost) return
         host = newHost
-        engine?.attachHost(newHost)
+        // Selama mesin belum ada, host cukup disimpan. Setelah terkunci,
+        // hanya mesin pemegang kunci yang boleh memasang view.
+        if (engineLocked) engine?.attachHost(newHost)
     }
 
     fun releaseHost() {
-        engine?.releaseHost()
+        if (engineLocked) engine?.releaseHost()
         host = null
     }
 
@@ -95,6 +108,12 @@ class VideoPlayerInstance(
         val context = appContext ?: return null
         val created = createEngine(context)
         engine = created
+        engineLocked = true
+        VideoPlayerLog.info(
+            "mesin dipilih: ${
+                if (created is LibVlcEngine) "libvlc" else "media3"
+            } (ekstensi=${FormatSupport.extensionOf(uri) ?: "tidak ada"})"
+        )
         host?.let { created.attachHost(it) }
         return created
     }
@@ -111,7 +130,11 @@ class VideoPlayerInstance(
     /** Memindahkan pemutaran ke libVLC setelah Media3 menyerah. */
     private suspend fun switchToVlc() {
         if (closed) return
-        if (engine is LibVlcEngine) return
+        // Penjaga bentrok: satu perpindahan saja, dan hanya dari Media3.
+        if (switchInProgress) return
+        if (useVlcOnly) return
+        if (engine !is Media3Engine && engine != null) return
+        switchInProgress = true
         useVlcOnly = true
         VideoPlayerLog.info("pindah mesin: media3 ke libvlc")
 

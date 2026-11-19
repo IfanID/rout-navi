@@ -282,6 +282,12 @@ class Media3Engine(
     private fun requestFallback() {
         if (fallbackRequested) return
         fallbackRequested = true
+        // Diamkan mesin ini lebih dulu supaya tidak ada dua mesin yang
+        // berbunyi bersamaan selama perpindahan.
+        player?.let { active ->
+            active.volume = 0f
+            active.pause()
+        }
         VideoPlayerLog.info("media3 menyerahkan berkas ke libvlc")
         onUnsupported()
     }

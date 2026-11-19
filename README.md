@@ -57,6 +57,28 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
 - Ikon subtitle/closed caption dan fallback teks polos bila grammar gagal dimuat.
 - Bahasa antarmuka: Inggris (default), Indonesia (`values-in`), Korea (`values-ko`), dan Mandarin (`values-zh`).
 
+#### 🎥 Pemutar Video
+
+- Mesin ganda: **Media3 ExoPlayer** sebagai mesin utama dan **libVLC** sebagai cadangan untuk berkas yang tidak didukung perangkat.
+- Mesin dipilih dari ekstensi berkas, sehingga berkas yang jelas hanya bisa diputar libVLC tidak dicoba dua kali oleh Media3.
+- Percepatan tahan layar 2x berjalan mulus tanpa jeda audio pada berkas yang diputar Media3, karena perubahan kecepatan memakai pemroses tempo Sonic.
+- HUD mengikuti susunan VLC: tombol kembali, judul, tombol track, ikon mode skala, menu tiga titik, baris seek dengan pratinjau waktu, serta baris putar, lompat 10 detik, dan putar berikutnya.
+- Gestur lengkap: geser vertikal untuk volume atau kecerahan, geser horizontal untuk seek, ketuk dua kali di tepi untuk melompat, cubit dua jari untuk zoom, dan tahan layar untuk 2x.
+- Kunci kontrol lewat ikon di samping ikon track, dengan tombol buka kunci di tengah bawah.
+- Panel track audio dan subtitle, menu opsi lain, serta pemilih kecepatan tampil sebagai menu kecil di atas tombolnya, bukan dialog penuh.
+- Setelan pemutar berupa lapisan di layar yang sama, tingginya mengikuti isi, dan bisa digeser ke bawah untuk menutup.
+- Subtitle bersebelahan nama berkas dimuat otomatis (`srt`, `ass`, `ssa`, `vtt`, `smi`, `ttml`), dan subtitle eksternal bisa dipilih dari penyimpanan.
+- Mode skala video: best fit, fit screen, fill, dan original size.
+- Audio berhenti seketika saat pemutar ditutup, dan fokus audio dikembalikan ke sistem.
+- Log pemutar ditulis ke `.prism/logs/video-player.log` untuk menelusuri mesin yang dipakai beserta masalah pemutaran.
+
+| Kelompok berkas | Mesin | Tahan layar 2x |
+|---|---|---|
+| MP4, MKV, WebM, TS, MP3, FLAC, dan sejenisnya | Media3 | mulus, tanpa jeda |
+| RMVB, WMV, AVI, FLV, AC3, DTS, dan format langka | libVLC | ada jeda singkat bawaan mesin |
+
+Catatan: `media3-decoder-ffmpeg` belum disertakan, jadi MKV beraudio AC3, EAC3, atau DTS masih diputar lewat libVLC.
+
 #### 🗜️ Arsip ZIP, 7Z, TAR, dan RAR
 
 - Ekstrak arsip ke folder saat ini, ke dalam folder khusus arsip, atau ke path tujuan pilihan.
@@ -169,7 +191,7 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
 - **Versi Android**: 12.0 (API 31) atau lebih baru
 - **Izin**: Akses penyimpanan (`MANAGE_EXTERNAL_STORAGE` untuk mengelola seluruh berkas; dapat dicabut kapan saja)
 - **Root (opsional)**: hanya diperlukan untuk menjelajah area sistem lewat layanan root
-- **Arsitektur**: arm64-v8a, armeabi-v7a, x86, dan x86_64
+- **Arsitektur**: arm64-v8a (libVLC untuk arsitektur lain tidak disertakan agar APK tidak membengkak)
 - **Versi saat ini**: 0.0.1 (versionCode 1)
 
 ---
@@ -185,6 +207,8 @@ Ringkasan fitur yang dibangun di fork ini, dari komit `068ad33` sampai komit ter
 | ![Gradle](https://img.shields.io/badge/Gradle-02303A?style=flat&logo=gradle&logoColor=white)                             | **Build Tool**       | 9.8.2         |
 | ![Android Gradle Plugin](https://img.shields.io/badge/AGP-3DDC84?style=flat&logo=android&logoColor=white)                 | **Plugin Android**   | 9.5.0         |
 | ![OpenJDK](https://img.shields.io/badge/JDK-ED8B00?style=flat&logo=openjdk&logoColor=white)                              | **Runtime Build**    | 25 (LTS)      |
+| ![Media3](https://img.shields.io/badge/Media3-4285F4?style=flat&logo=android&logoColor=white)                              | **Mesin Pemutar Utama** | 1.11.1     |
+| ![libVLC](https://img.shields.io/badge/libVLC-FF8800?style=flat&logo=vlcmediaplayer&logoColor=white)                       | **Mesin Pemutar Cadangan** | 3.7.7   |
 
 ---
 
@@ -226,16 +250,16 @@ Bagian ini **bukan syarat** — hanya berlaku kalau kamu membangun proyek di per
 
 ## 🤝 Kontribusi
 
-1. **Fork** repositori ini
-2. **Buat** branch fitur (`git checkout -b fitur/fitur-baru`)
-3. **Commit** perubahan (`git commit -m 'Tambah fitur baru'`)
-4. **Push** ke branch (`git push origin fitur/fitur-baru`)
-5. **Buka** Pull Request
+- Lapor bug atau usul fitur lewat **Issues**.
+- Kirim usulan kode lewat **Pull Request** dari fork Anda.
+
+Perbaikan yang tidak khusus fork ini sebaiknya dikirim juga ke proyek asli [Prism File Explorer](https://github.com/Raival-e/Prism-File-Explorer).
 
 ### 📝 **Panduan Pengembangan**
 
 - Ikuti konvensi penulisan kode Kotlin
-- Tulis pesan commit yang jelas
+- Tulis pesan commit yang jelas dan sebutkan alasan perubahannya
+- Jalankan `./gradlew :app:compileDebugKotlin` sebelum mengirim Pull Request
 
 ---
 
