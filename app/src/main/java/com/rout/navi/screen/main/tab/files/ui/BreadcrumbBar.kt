@@ -42,6 +42,7 @@ import com.rout.navi.common.orIf
 import com.rout.navi.common.showMsg
 import com.rout.navi.screen.main.tab.files.FilesTab
 import com.rout.navi.screen.main.tab.files.holder.VirtualFileHolder
+import com.rout.navi.screen.main.tab.files.misc.CategoryChoice
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.max
@@ -51,7 +52,9 @@ import kotlin.math.max
 fun BreadcrumbBar(tab: FilesTab) {
     val highlightedPathListItemColor = MaterialTheme.colorScheme.primary
 
-    if (tab.showCategories) {
+    // Di tab riwayat, baris kategori disembunyikan karena isinya lintas folder
+    // dan filter folder tidak berlaku.
+    if (tab.showCategories && tab.categoryChoice !is CategoryChoice.History) {
         CategoriesRow(tab)
     } else if (tab.activeFolder !is VirtualFileHolder) {
         Row(

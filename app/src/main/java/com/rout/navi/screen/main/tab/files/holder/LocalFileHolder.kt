@@ -17,6 +17,7 @@ import com.rout.navi.common.fromJson
 import com.rout.navi.common.hasParent
 import com.rout.navi.common.isNot
 import com.rout.navi.common.toFormattedSize
+import com.rout.navi.common.toFormattedTime
 import com.rout.navi.screen.main.tab.files.FilesTab
 import com.rout.navi.screen.main.tab.files.misc.ContentCount
 import com.rout.navi.screen.main.tab.files.misc.DefaultOpeningMethods
@@ -78,8 +79,25 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
     override suspend fun getDetails(): String {
         val separator = " | "
 
-        if (details.isNotEmpty()) return details
+        // Video yang ada di riwayat menampilkan kemajuan tontonannya. Data
+        // dicari dengan aturan yang sama seperti saat dicatat, supaya tidak
+        // pernah jatuh ke versi lama.
+        if (!file.isDirectory && FileMimeType.videoFileType.contains(extension)) {
+            val entry = globalClass.preferencesManager.watchEntryFor(file.path)
+            val kemajuan = when {
+                entry == null -> null
+                entry.isFinished -> globalClass.getString(R.string.video_finished)
+                entry.durationMs > 0 -> "${entry.percent}% - ${entry.positionMs.toFormattedTime()} / " +
+                        entry.durationMs.toFormattedTime()
+                // Entri lama belum punya durasi; jangan kembali ke keterangan
+                // biasa yang menghapus jejak riwayatnya.
+                else -> globalClass.getString(R.string.history_missing_progress)
+            }
+            if (kemajuan != null) return "$kemajuan$separator${getLastModifiedDate()}"
+        }
 
+        // Cache lama tidak dipakai lagi: isinya bisa dibuat sebelum riwayat
+        // diperbaiki, sehingga keterangan tampak tidak punya informasi riwayat.
         return buildString {
             append(getLastModifiedDate())
             if (file.isDirectory) {
@@ -93,8 +111,6 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
                 append(separator)
                 append(file.extension)
             }
-        }.also {
-            details = it
         }
     }
 
@@ -311,6 +327,38 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
         }
     }
 
+    /**
+     * Membuka video di pemutar. Posisi awal diambil dari riwayat tontonan bila
+     * sakelar lanjut otomatis menyala, jadi klik pada video yang pernah
+     * ditonton langsung berlanjut tanpa perlu ke halaman Histori.
+     */
+    fun openVideoWithResume(context: Context, fromStart: Boolean = false) {
+        val extras = Bundle()
+        val resumeEnabled = com.rout.navi.screen.viewer.video.VideoPlayerPreferences
+            .get(globalClass).resumePlayback
+        val position = if (resumeEnabled && !fromStart) {
+            runBlocking {
+                com.rout.navi.screen.main.tab.files.provider.StorageProvider
+                    .getWatchEntry(file.path)?.resumePositionMs ?: 0L
+            }
+        } else {
+            0L
+        }
+        if (fromStart) {
+            runBlocking {
+                globalClass.preferencesManager.clearWatchPosition(file.path)
+            }
+        }
+        extras.putLong(VideoPlayerActivity.EXTRA_START_POSITION, position)
+        openFileWithPackage(
+            context,
+            context.packageName,
+            VideoPlayerActivity::class.java.name,
+            extras = extras,
+            useDirectFileUri = true
+        )
+    }
+
     fun writeText(text: String) {
         file.writeText(text)
     }
@@ -353,11 +401,15 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
         if (FileMimeType.isTextConfigFile(file.name, extension) ||
             codeFileType.contains(extension) || editableFileType.contains(extension)
         ) {
-            globalClass.textEditorManager.openTextEditor(
-                this,
-                context
-            )
-            return true
+            // .ts dipakai dua hal berbeda: TypeScript dan transport stream MPEG.
+            // Isi berkasnya yang menentukan, bukan ukurannya.
+            if (!(extension in FileMimeType.videoFileType && isMpegTransportStream())) {
+                globalClass.textEditorManager.openTextEditor(
+                    this,
+                    context
+                )
+                return true
+            }
         }
 
         // Ekstensi yang tidak terdaftar tetap dikenali dari MIME yang dikirim
@@ -368,12 +420,7 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
         if (FileMimeType.videoFileType.contains(extension) ||
             (mime.startsWith("video/") && !isPlaylistMime)
         ) {
-            openFileWithPackage(
-                context,
-                context.packageName,
-                VideoPlayerActivity::class.java.name,
-                useDirectFileUri = true
-            )
+            openVideoWithResume(context)
             return true
         }
 
@@ -460,6 +507,32 @@ open class LocalFileHolder(val file: File) : ContentHolder() {
                         header[1] == 0x00.toByte() &&
                         header[2] == 0x01.toByte() &&
                         (header[3].toInt() and 0xFF) in 0xBA..0xBF
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Transport stream MPEG memakai paket berukuran tetap yang diawali 0x47.
+     * Paket 188 byte dipakai .ts, paket 192 byte dipakai .m2ts dengan 4 byte
+     * waktu tambahan di depan. Membaca dua paket awal sudah cukup untuk
+     * memisahkan video dari TypeScript yang isinya teks biasa.
+     */
+    private fun isMpegTransportStream(): Boolean {
+        if (!file.isFile || file.length() < 189) return false
+
+        return try {
+            file.inputStream().use { stream ->
+                val header = ByteArray(200)
+                val read = stream.read(header)
+                if (read <= 0) return@use false
+                val sync = 0x47.toByte()
+                when {
+                    read > 188 && header[0] == sync && header[188] == sync -> true
+                    read > 196 && header[4] == sync && header[196] == sync -> true
+                    else -> false
+                }
             }
         } catch (_: Exception) {
             false

@@ -19,13 +19,16 @@ import com.rout.navi.screen.viewer.video.model.VideoPlayerState
 import com.rout.navi.screen.viewer.video.model.VideoScaleMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 
 /**
  * Pemutar video yang memilih mesinnya sendiri.
@@ -40,13 +43,18 @@ import kotlinx.coroutines.launch
  */
 class VideoPlayerInstance(
     override val uri: Uri,
-    override val id: String
+    override val id: String,
+    /** Posisi awal dari intent, 0 berarti mulai dari awal. */
+    private val startPositionMs: Long = 0L
 ) : ViewerInstance {
 
     private val _playerState = MutableStateFlow(VideoPlayerState())
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    /** Jeda antar pencatatan posisi selama video diputar. */
+    private val WATCH_SAVE_INTERVAL_MS = 10_000L
 
     // Perpindahan mesin tidak boleh berjalan di dalam callback ExoPlayer;
     // pelepasan pemutar dari dalam callback bisa mengganggu antrean event-nya.
@@ -57,6 +65,7 @@ class VideoPlayerInstance(
 
     private var engine: PlaybackEngine? = null
     private var closed = false
+    private var historyRecorded = false
 
     /**
      * Perkakas mesin sesuai varian aplikasi. Varian dipilih Gradle lewat
@@ -103,13 +112,26 @@ class VideoPlayerInstance(
         appContext = context.applicationContext
         audioManager = appContext?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
+        // Dicatat sekali per pemutaran; initializePlayer dipanggil lagi saat
+        // rotasi, jadi penanda diperlukan agar riwayat tidak tercatat ganda.
+        if (!historyRecorded) {
+            historyRecorded = true
+            berkasRiwayat()?.let {
+                globalClass.preferencesManager.recordWatchHistory(it, 0L, 0L)
+            }
+        }
+
         if (engine != null) {
             // Rotasi atau layar dipasang ulang: mesin yang sama dipakai lagi.
             VideoPlayerLog.info("init ulang, mesin ${engine?.name} dipakai lagi")
         }
         engine?.prepare() ?: run {
             val created = ensureEngine() ?: return
+            // Posisi awal ditentukan sekali, sebelum media dimuat, supaya
+            // tidak ada permintaan seek setelah pemutaran berjalan.
+            created.startPositionMs = startPositionMs
             created.prepare()
+            startWatchTracking()
         }
     }
 
@@ -219,6 +241,7 @@ class VideoPlayerInstance(
     /** Jeda sekaligus mengingat posisi, dipakai saat layar ditinggal. */
     fun pause() {
         engine?.pause()
+        saveWatchPosition()
     }
 
     /** Melanjutkan video di posisi terakhir setelah layar kembali aktif. */
@@ -229,6 +252,7 @@ class VideoPlayerInstance(
     /** Dipakai saat activity benar-benar ditutup. */
     fun stopPlayback() {
         engine?.stopPlayback()
+        saveWatchPosition()
     }
 
     fun seekTo(position: Long) {
@@ -319,8 +343,64 @@ class VideoPlayerInstance(
 
     // ----------------------------------------------------------------- tutup
 
+    // ---------------------------------------------------------------- riwayat
+
+    /**
+     * Berkas yang dicatat di riwayat. URI dari pemutar bisa berbentuk file://
+     * atau content:// dari FileProvider; keduanya dikembalikan ke jalur berkas
+     * supaya satu video hanya punya satu catatan, dari halaman mana pun video
+     * itu dibuka.
+     */
+    private fun berkasRiwayat(): String? {
+        val path = uri.path ?: uri.encodedPath ?: return null
+        if (uri.scheme == "content") {
+            // FileProvider memakai query "path" berisi jalur asli berkas.
+            val asli = uri.getQueryParameter("path")
+                ?: Uri.decode(path).substringAfter("path=", "").substringBefore('&')
+            return asli.takeIf { it.startsWith("/") && File(it).exists() }
+        }
+        return path.takeIf { it.startsWith("/") }
+    }
+
+    private var watchJob: Job? = null
+
+    /**
+     * Mencatat posisi secara berkala selama diputar. Penulisan ditunda oleh
+     * PreferencesManager, jadi data tidak ditulis tiap detik.
+     */
+    private fun startWatchTracking() {
+        val path = berkasRiwayat() ?: return
+        watchJob?.cancel()
+        watchJob = scope.launch {
+            while (!closed) {
+                delay(WATCH_SAVE_INTERVAL_MS)
+                val snapshot = _playerState.value
+                if (snapshot.isPlaying && snapshot.duration > 0) {
+                    globalClass.preferencesManager.catatPosisiTontonan(
+                        path = path,
+                        positionMs = snapshot.currentPosition,
+                        durationMs = snapshot.duration
+                    )
+                }
+            }
+        }
+    }
+
+    /** Menyimpan posisi terakhir, dipanggil saat jeda, berhenti, dan ditutup. */
+    fun saveWatchPosition() {
+        val path = berkasRiwayat() ?: return
+        val snapshot = _playerState.value
+        if (snapshot.duration <= 0) return
+        globalClass.preferencesManager.simpanPosisiSeketika(
+            path = path,
+            positionMs = snapshot.currentPosition,
+            durationMs = snapshot.duration
+        )
+    }
+
     override fun onClose() {
         VideoPlayerLog.info("onClose uri=$uri mesin=${engine?.name}")
+        saveWatchPosition()
         closed = true
         engine?.release()
         engine = null

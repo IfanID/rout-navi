@@ -178,6 +178,16 @@ fun VideoPlayerSettingsBody(
             enabled = prefs.fastPlay,
             onValueChange = { prefs.updateFastPlaySpeed(it) }
         )
+
+        SectionTitle(stringResource(R.string.video_playback_section))
+
+        PreferenceItem(
+            label = stringResource(R.string.video_resume_playback),
+            supportingText = stringResource(R.string.video_resume_playback_summary),
+            icon = Icons.Rounded.PlayCircle,
+            switchState = prefs.resumePlayback,
+            onSwitchChange = prefs::updateResumePlayback
+        )
     }
 }
 

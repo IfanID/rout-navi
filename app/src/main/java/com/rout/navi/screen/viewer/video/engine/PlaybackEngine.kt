@@ -34,6 +34,14 @@ interface PlaybackEngine {
 
     suspend fun prepare()
 
+    /**
+     * Posisi awal sebelum media dimuat. Diterapkan sekali saat [prepare],
+     * sehingga tidak ada permintaan seek yang mengganggu buffer awal.
+     */
+    var startPositionMs: Long
+        get() = 0L
+        set(_) {}
+
     fun playPause()
 
     fun pause()

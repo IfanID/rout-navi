@@ -1,7 +1,9 @@
 package com.rout.navi.screen.viewer.video.engine
 
 import android.content.Context
+import android.graphics.Color
 import android.net.Uri
+import android.os.SystemClock
 import android.view.ViewGroup
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -13,8 +15,12 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.LoadControl
+import androidx.media3.exoplayer.upstream.DefaultAllocator
 import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.rout.navi.App.Companion.globalClass
 import com.rout.navi.R
@@ -23,6 +29,7 @@ import com.rout.navi.screen.viewer.video.VideoPlayerLog
 import com.rout.navi.screen.viewer.video.model.VideoPlayerState
 import com.rout.navi.screen.viewer.video.model.VideoScaleMode
 import com.rout.navi.screen.viewer.video.model.VideoTrackInfo
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,7 +39,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 /**
  * Mesin pemutar utama berbasis Media3 ExoPlayer.
@@ -57,8 +63,12 @@ class Media3Engine(
 
     private var player: ExoPlayer? = null
     private var playerView: PlayerView? = null
-
     private var prepared = false
+
+    /** Waktu tiap tahap mulai supaya jeda pemutaran bisa ditelusuri dari log. */
+    private var playerCreatedAtMs = 0L
+    private var playbackStartedAtMs = 0L
+    private var firstFrameLogged = false
     private var released = false
     private var fallbackRequested = false
     private var subtitleLoaded = false
@@ -89,6 +99,19 @@ class Media3Engine(
         val view = playerView ?: PlayerView(host.context).apply {
             useController = false
             resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+            // Gaya caption sistem Android memakai latar hitam, sehingga
+            // subtitle ikut tampil dalam kotak. Gaya sendiri dipakai supaya
+            // teks bersih dengan garis tepi tipis, seperti pemutar lain.
+            subtitleView?.setStyle(
+                CaptionStyleCompat(
+                    Color.WHITE,
+                    Color.TRANSPARENT,
+                    Color.TRANSPARENT,
+                    CaptionStyleCompat.EDGE_TYPE_OUTLINE,
+                    Color.BLACK,
+                    null
+                )
+            )
         }.also { playerView = it }
 
         view.player = player
@@ -112,6 +135,13 @@ class Media3Engine(
 
     // ------------------------------------------------------------ pemutaran
 
+    // Posisi awal dari riwayat, dibaca sekali saat prepare.
+    private var pendingStartPosition = 0L
+
+    override var startPositionMs: Long
+        get() = pendingStartPosition
+        set(value) { pendingStartPosition = value.coerceAtLeast(0L) }
+
     override suspend fun prepare() {
         if (released) return
         if (prepared) {
@@ -134,8 +164,11 @@ class Media3Engine(
         try {
             withContext(Dispatchers.Main) {
                 createPlayer()
-                loadSiblingSubtitleOnce()
-                loadMedia(0L, playWhenReady = true)
+                loadInitialSubtitleOnce()
+                // Lanjut dari posisi terakhir bila riwayat menyimpannya.
+                val start = startPositionMs
+                loadMedia(start, playWhenReady = true)
+                VideoPlayerLog.info("media3 mulai dari posisi $start")
             }
             startPositionTracking()
         } catch (e: Throwable) {
@@ -159,12 +192,32 @@ class Media3Engine(
             // Fokus audio diurus lapisan Compose, jadi ExoPlayer tidak mengurusnya.
             .setAudioAttributes(audoAttributes, false)
             .setHandleAudioBecomingNoisy(true)
+            .setLoadControl(loadControlFor(FormatSupport.extensionOf(uri)))
             .build()
         exo.addListener(listener)
         player = exo
+        playerCreatedAtMs = SystemClock.elapsedRealtime()
 
         playerView?.player = exo
         exo.volume = if (state.value.isMuted) 0f else 1f
+    }
+
+    /**
+     * Transport stream dibaca berurutan tanpa indeks, jadi ia butuh ruang buffer
+     * lebih besar dari bawaan. Ambang mulai putar tetap memakai nilai bawaan
+     * Media3 untuk berkas lokal supaya pemutaran tidak sengaja ditunda.
+     */
+    private fun loadControlFor(extension: String?): LoadControl {
+        if (extension !in TRANSPORT_STREAM_EXTENSIONS) return DefaultLoadControl()
+
+        val allocator = DefaultAllocator(
+            /* trimOnReset = */ true,
+            /* individualAllocationSize = */ C.DEFAULT_BUFFER_SEGMENT_SIZE
+        )
+        return DefaultLoadControl.Builder()
+            .setBufferDurationsMs(MIN_BUFFER_MS, MAX_BUFFER_MS, 0, 0)
+            .setAllocator(allocator)
+            .build()
     }
 
     private fun loadMedia(startPosition: Long, playWhenReady: Boolean) {
@@ -179,19 +232,33 @@ class Media3Engine(
         player.setPlaybackSpeed(state.value.playbackSpeed)
     }
 
-    private fun buildSubtitleConfig(file: File): MediaItem.SubtitleConfiguration =
+    private fun buildSubtitleConfig(
+        file: File,
+        selected: Boolean = true
+    ): MediaItem.SubtitleConfiguration =
         MediaItem.SubtitleConfiguration.Builder(Uri.fromFile(file))
             .setMimeType(SubtitleFiles.mimeTypeOf(file))
-            .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+            // Label memakai nama berkas supaya daftar track terbaca seperti
+            // nama bahasa, bukan "Subtitle 1".
+            .setLabel(file.nameWithoutExtension.substringAfter('_').ifBlank { file.nameWithoutExtension })
+            .setSelectionFlags(
+                if (selected) C.SELECTION_FLAG_DEFAULT else 0
+            )
             .build()
 
-    /** Memuat subtitle bersebelahan nama berkas, sekali saja per pemutaran. */
-    private fun loadSiblingSubtitleOnce() {
+    /**
+     * Memuat subtitle awal sekali per pemutaran. Subtitle yang pernah dipilih
+     * untuk video ini didahulukan, baru kemudian subtitle bersebelahan nama.
+     */
+    private fun loadInitialSubtitleOnce() {
         if (subtitleLoaded) return
         subtitleLoaded = true
-        val candidate = SubtitleFiles.siblingOf(uri) ?: return
+        val saved = SubtitleFiles.savedFor(uri)
+        val candidate = saved ?: SubtitleFiles.siblingOf(uri) ?: return
         subtitleConfigs += buildSubtitleConfig(candidate)
-        VideoPlayerLog.info("subtitle bersebelahan ${candidate.name}")
+        VideoPlayerLog.info(
+            "subtitle awal ${if (saved != null) "tersimpan" else "bersebelahan"} ${candidate.name}"
+        )
     }
 
     // ---------------------------------------------------------------- status
@@ -200,16 +267,27 @@ class Media3Engine(
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             when (playbackState) {
-                Player.STATE_BUFFERING -> state.update { it.copy(isLoading = true) }
-
-                Player.STATE_READY -> state.update {
-                    it.copy(
-                        isLoading = false,
-                        isReady = true,
-                        isEnded = false,
-                        error = null,
-                        duration = durationOrFallback(it.duration)
+                Player.STATE_BUFFERING -> {
+                    VideoPlayerLog.info(
+                        "media3 buffering setelah ${SystemClock.elapsedRealtime() - playerCreatedAtMs} ms"
                     )
+                    state.update { it.copy(isLoading = true) }
+                }
+
+                Player.STATE_READY -> {
+                    VideoPlayerLog.info(
+                        "media3 siap setelah ${SystemClock.elapsedRealtime() - playerCreatedAtMs} ms, " +
+                                "durasi=${player?.duration}"
+                    )
+                    state.update {
+                        it.copy(
+                            isLoading = false,
+                            isReady = true,
+                            isEnded = false,
+                            error = null,
+                            duration = durationOrFallback(it.duration)
+                        )
+                    }
                 }
 
                 Player.STATE_ENDED -> {
@@ -230,13 +308,31 @@ class Media3Engine(
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            if (isPlaying) everPlayed = true
+            if (isPlaying) {
+                everPlayed = true
+                if (playbackStartedAtMs == 0L) {
+                    playbackStartedAtMs = SystemClock.elapsedRealtime()
+                    VideoPlayerLog.info(
+                        "media3 mulai berbunyi setelah ${playbackStartedAtMs - playerCreatedAtMs} ms"
+                    )
+                }
+            }
             state.update { it.copy(isPlaying = isPlaying) }
         }
 
         override fun onTracksChanged(tracks: Tracks) {
             rebuildTracks(tracks)
             ensureAudioDecodable(tracks)
+        }
+
+        override fun onRenderedFirstFrame() {
+            if (firstFrameLogged) return
+            firstFrameLogged = true
+            val now = SystemClock.elapsedRealtime()
+            VideoPlayerLog.info(
+                "media3 frame pertama setelah ${now - playerCreatedAtMs} ms, " +
+                        "sejak berbunyi ${if (playbackStartedAtMs == 0L) "-" else "${now - playbackStartedAtMs} ms"}"
+            )
         }
 
         override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -458,6 +554,11 @@ class Media3Engine(
 
     private fun applyTrackSelection(trackId: Int, type: Int) {
         val player = player ?: return
+        // Memilih "Tidak ada" berarti simpanan ikut dibuang, supaya subtitle
+        // tidak muncul lagi setiap video dibuka.
+        if (type == C.TRACK_TYPE_TEXT && trackId < 0) {
+            SubtitleFiles.clearFor(uri)
+        }
         val builder = player.trackSelectionParameters.buildUpon()
             .clearOverridesOfType(type)
             .setTrackTypeDisabled(type, trackId < 0)
@@ -472,20 +573,60 @@ class Media3Engine(
     }
 
     override fun addSubtitle(uri: Uri) {
+        val videoUri = this.uri
         scope.launch {
-            val cached = withContext(Dispatchers.IO) { SubtitleFiles.copyToCache(uri) }
-                ?: return@launch
-            val player = player ?: return@launch
-            // Subtitle baru hanya bisa ikut kalau media item disusun ulang.
-            // Posisi dipertahankan supaya pemutaran lanjut di tempat semula.
-            val position = player.currentPosition.coerceAtLeast(0L)
-            val wasPlaying = player.isPlaying
-            subtitleConfigs += buildSubtitleConfig(cached)
-            withContext(Dispatchers.Main) {
-                loadMedia(position, playWhenReady = wasPlaying)
+            // Berkas harus benar-benar tersalin sebelum dipakai; tanpa cek ini
+            // kegagalan salin berakhir diam tanpa subtitle. Salinan disimpan
+            // permanen supaya subtitle melekat pada videonya.
+            val stored = withContext(Dispatchers.IO) { SubtitleFiles.saveFor(videoUri, uri) }
+            if (stored == null) {
+                VideoPlayerLog.error("subtitle gagal disalin dari $uri")
+                state.update {
+                    it.copy(error = globalClass.getString(R.string.video_subtitle_failed))
+                }
+                return@launch
             }
-            VideoPlayerLog.info("subtitle ditambahkan ${cached.absolutePath}")
+
+            val player = player ?: return@launch
+            val position = player.currentPosition.coerceAtLeast(0L)
+            // playWhenReady dipakai, bukan isPlaying: saat buffering isPlaying
+            // bernilai salah walau pengguna tidak pernah menjeda video.
+            val wasPlaying = player.playWhenReady
+            // Jumlah subtitle sebelum ditambah, dipakai menandai track yang baru.
+            val configCountBefore = state.value.subtitleTracks.size
+
+            subtitleConfigs += buildSubtitleConfig(stored)
+            VideoPlayerLog.info("subtitle ditambahkan ${stored.absolutePath}")
+            withContext(Dispatchers.Main) {
+                // Mengganti daftar subtitle tetap memerlukan item baru, tapi
+                // posisi dan status putar dikembalikan seketika supaya gambar
+                // tidak lompat ke awal seperti memuat ulang biasa.
+                loadMedia(position, playWhenReady = wasPlaying)
+                // Daftar track baru terbaca setelah item siap, jadi subtitle
+                // dipilih begitu muncul, bukan menunggu tombol ditekan lagi.
+                scope.launch {
+                    val picked = selectFirstNewSubtitle(configCountBefore)
+                    VideoPlayerLog.info("subtitle baru dipilih=${picked != -1}")
+                }
+            }
         }
+    }
+
+    /**
+     * Memilih subtitle yang baru ditambahkan begitu daftar track memuatnya.
+     * Dibatasi supaya tidak menunggu selamanya bila extractor menolak berkas.
+     */
+    private suspend fun selectFirstNewSubtitle(previousCount: Int): Int {
+        repeat(SUBTITLE_SELECT_TIMEOUT_STEPS) {
+            val tracks = state.value.subtitleTracks
+            if (tracks.size > previousCount) {
+                val latest = tracks.last().id
+                selectSubtitleTrack(latest)
+                return latest
+            }
+            delay(SUBTITLE_SELECT_STEP_MS)
+        }
+        return -1
     }
 
     // ---------------------------------------------------------------- skala
@@ -523,5 +664,16 @@ class Media3Engine(
         }
         player = null
         VideoPlayerLog.info("media3 release selesai")
+    }
+
+    private companion object {
+        val TRANSPORT_STREAM_EXTENSIONS = setOf("ts", "m2ts", "mts")
+
+        const val MIN_BUFFER_MS = 30_000
+        const val MAX_BUFFER_MS = 60_000
+
+        /** Penantian track subtitle baru: 20 kali 100 ms, total 2 detik. */
+        const val SUBTITLE_SELECT_TIMEOUT_STEPS = 20
+        const val SUBTITLE_SELECT_STEP_MS = 100L
     }
 }

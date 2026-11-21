@@ -21,7 +21,9 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Merge
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.OpenInNewOff
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material3.HorizontalDivider
@@ -57,6 +59,7 @@ import com.rout.navi.screen.main.tab.files.holder.LocalFileHolder
 import com.rout.navi.screen.main.tab.files.holder.RootFileHolder
 import com.rout.navi.screen.main.tab.files.holder.VirtualFileHolder
 import com.rout.navi.screen.main.tab.files.misc.DefaultOpeningMethods
+import com.rout.navi.screen.main.tab.files.misc.FileMimeType
 import com.rout.navi.screen.main.tab.files.misc.FileMimeType.apkBundleFileType
 import com.rout.navi.screen.main.tab.files.misc.FileMimeType.supportedArchiveFileType
 import com.rout.navi.screen.main.tab.files.provider.StorageProvider
@@ -224,6 +227,29 @@ fun FileOptionsMenuDialog(
 
             Space(size = 6.dp)
             HorizontalDivider()
+
+            // Pilihan untuk berkas video: lanjutkan atau mulai dari awal.
+            if (isSingleFile && targetContentHolder is LocalFileHolder &&
+                FileMimeType.videoFileType.contains(targetContentHolder.extension)
+            ) {
+                val video = targetContentHolder
+                val watchEntry = remember(video.file.path) {
+                    runBlocking { StorageProvider.getWatchEntry(video.file.path) }
+                }
+                // Tombol Lanjut hanya berarti bila ada posisi tersimpan.
+                if (watchEntry != null && watchEntry.positionMs > 0 && !watchEntry.isFinished) {
+                    FileOption(Icons.Rounded.PlayArrow, stringResource(R.string.history_lanjut)) {
+                        onDismissRequest()
+                        video.openVideoWithResume(context)
+                    }
+                    HorizontalDivider()
+                }
+                FileOption(Icons.Rounded.RestartAlt, stringResource(R.string.history_from_start)) {
+                    onDismissRequest()
+                    video.openVideoWithResume(context, fromStart = true)
+                }
+                HorizontalDivider()
+            }
 
             if (isSingleFolder) {
                 FileOption(

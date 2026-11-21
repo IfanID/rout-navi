@@ -18,6 +18,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.MaterialTheme
+import com.rout.navi.screen.main.tab.files.misc.CategoryChoice
+import com.rout.navi.screen.main.tab.files.provider.StorageProvider
+import com.rout.navi.screen.main.tab.files.ui.dialog.HistorySelectionMenu
+import com.rout.navi.screen.viewer.video.WatchEntry
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -35,7 +42,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -65,6 +74,7 @@ import com.rout.navi.common.ui.Space
 import com.rout.navi.screen.main.tab.files.FilesTab
 import com.rout.navi.screen.main.tab.files.coil.canUseCoil
 import com.rout.navi.screen.main.tab.files.holder.ContentHolder
+import com.rout.navi.screen.main.tab.files.holder.LocalFileHolder
 import com.rout.navi.screen.main.tab.files.misc.FileMimeType.imageFileType
 import com.rout.navi.screen.main.tab.files.misc.FileMimeType.videoFileType
 import com.rout.navi.screen.main.tab.files.misc.ViewConfigs
@@ -174,15 +184,97 @@ private fun LoadingOverlay(tab: FilesTab) {
 
 @Composable
 private fun FilesListContent(tab: FilesTab) {
+    // Penanda versi daftar: berubah setiap tab aktif kembali dari pemutar,
+    // sehingga keterangan berkas dihitung ulang di semua gaya tampilan.
+    val versi by produceState(initialValue = 0, tab.id) {
+        tab.tabResumeVersi.collect { value = it }
+    }
+
+    // Tab riwayat memakai daftar satu kolom dengan sampul, mengikuti susunan
+    // daftar riwayat vlc-android. Gaya daftar biasa tidak dipakai di sini
+    // karena butuh garis kemajuan dan waktu tonton.
+    if (tab.categoryChoice is CategoryChoice.History) {
+        HistoryList(tab, versi)
+        return
+    }
+
+    // Menu aksi mode pilih ikut dibuka dari halaman ini, supaya tampil hanya
+    // saat tab riwayat yang sedang dilihat.
+    HistorySelectionMenu(
+        show = tab.showHistorySelectionMenu,
+        tab = tab,
+        onDismissRequest = { tab.showHistorySelectionMenu = false }
+    )
+
     when (tab.viewConfig.viewType) {
-        ViewType.LIST -> FilesListColumns(tab)
-        ViewType.GRID -> FilesListGrid(tab)
+        ViewType.LIST -> FilesListColumns(tab, versi)
+        ViewType.GRID -> FilesListGrid(tab, versi)
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FilesListColumns(tab: FilesTab) {
+private fun HistoryList(tab: FilesTab, versi: Int) {
+    val context = LocalContext.current
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        itemsIndexed(
+            tab.activeFolderContent,
+            key = { _, item -> item.uid }
+        ) { index, item ->
+            val holder = item as? LocalFileHolder ?: return@itemsIndexed
+            val path = item.uniquePath
+            var dipilih by remember(tab.selectedFiles.containsKey(path)) {
+                mutableStateOf(tab.selectedFiles.containsKey(path))
+            }
+
+            // Kemajuan dibaca ulang setiap versi berubah, jadi baris langsung
+            // benar setelah kembali dari pemutar.
+            var entry by remember(path, versi) { mutableStateOf<WatchEntry?>(null) }
+            LaunchedEffect(path, versi) {
+                entry = withContext(Dispatchers.IO) { StorageProvider.getWatchEntry(path) }
+            }
+
+            fun togglePilih() {
+                if (tab.selectedFiles.containsKey(path)) {
+                    tab.selectedFiles.remove(path)
+                    tab.lastSelectedFileIndex = -1
+                } else {
+                    tab.selectedFiles[path] = item
+                    tab.lastSelectedFileIndex = index
+                }
+                dipilih = tab.selectedFiles.containsKey(path)
+                tab.onSelectionChange()
+            }
+
+            HistoryRow(
+                item = holder,
+                entry = entry,
+                dipilih = dipilih,
+                onClick = {
+                    if (tab.isSelectionModeActive) togglePilih()
+                    else tab.openFile(context, item)
+                },
+                // Ketuk lama langsung masuk mode pilih, seperti daftar riwayat
+                // vlc-android. Menu opsi berkas tidak dipakai di halaman ini.
+                onLongClick = {
+                    tab.selectionModeEnabled = true
+                    if (!tab.selectedFiles.containsKey(path)) {
+                        tab.selectedFiles[path] = item
+                    }
+                    dipilih = true
+                    tab.onSelectionChange()
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun FilesListColumns(tab: FilesTab, versi: Int) {
     val context = LocalContext.current
     val selectionHighlightColor = colorScheme.surfaceContainerHigh.copy(alpha = 1f)
     val highlightColor = colorScheme.primary.copy(alpha = 0.05f)
@@ -208,7 +300,8 @@ fun FilesListColumns(tab: FilesTab) {
                 context = context,
                 viewConfigs = tab.viewConfig,
                 isSelectedItem = isSelectedItem,
-                onSelection = { isSelectedItem = it }
+                onSelection = { isSelectedItem = it },
+                versi = versi
             )
         }
     }
@@ -216,7 +309,7 @@ fun FilesListColumns(tab: FilesTab) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FilesListGrid(tab: FilesTab) {
+fun FilesListGrid(tab: FilesTab, versi: Int) {
     val context = LocalContext.current
     val selectionHighlightColor = colorScheme.surfaceContainerHigh.copy(alpha = 1f)
     val highlightColor = colorScheme.primary.copy(alpha = 0.05f)
@@ -243,7 +336,8 @@ fun FilesListGrid(tab: FilesTab) {
                 highlightColor = highlightColor,
                 context = context,
                 viewConfigs = tab.viewConfig,
-                onSelection = { isSelectedItem = it }
+                onSelection = { isSelectedItem = it },
+                versi = versi
             )
         }
     }
@@ -261,7 +355,8 @@ private fun ColumnFileItem(
     currentItemPath: String = item.uniquePath,
     isSelectedItem: Boolean,
     onSelection: (Boolean) -> Unit,
-    viewConfigs: ViewConfigs
+    viewConfigs: ViewConfigs,
+    versi: Int
 ) {
     fun toggleSelection() {
         if (tab.selectedFiles.containsKey(currentItemPath)) {
@@ -351,7 +446,8 @@ private fun ColumnFileItem(
                     item = item,
                     currentItemPath = currentItemPath,
                     fontSize = fontSize,
-                    isHighlighted = tab.highlightedFiles.contains(currentItemPath)
+                    isHighlighted = tab.highlightedFiles.contains(currentItemPath),
+                    versi = versi
                 )
             }
         }
@@ -377,7 +473,8 @@ private fun GridFileItem(
     itemPath: String,
     isSelected: Boolean,
     onSelection: (Boolean) -> Unit,
-    viewConfigs: ViewConfigs
+    viewConfigs: ViewConfigs,
+    versi: Int = 0
 ) {
     fun toggleSelection() {
         if (tab.selectedFiles.containsKey(itemPath)) {
@@ -587,23 +684,26 @@ private fun FileDetails(
     item: ContentHolder,
     currentItemPath: String,
     fontSize: Int,
-    isHighlighted: Boolean
+    isHighlighted: Boolean,
+    versi: Int
 ) {
+    // Versi keterangan ikut naik setiap tab aktif kembali, supaya kemajuan
+    // tontonan terbaca ulang tanpa perlu menyegarkan seluruh daftar.
     var details by remember(
         key1 = currentItemPath,
-        key2 = item.lastModified
+        key2 = item.lastModified,
+        key3 = versi
     ) { mutableStateOf(emptyString) }
 
     LaunchedEffect(
         key1 = currentItemPath,
-        key2 = item.lastModified
+        key2 = item.lastModified,
+        key3 = versi
     ) {
-        if (details.isEmpty()) {
-            val det = withContext(IO) {
-                item.getDetails()
-            }
-            details = det
+        val det = withContext(IO) {
+            item.getDetails()
         }
+        details = det
     }
 
     Text(
@@ -625,22 +725,23 @@ private fun FileDetails(
 private fun FileDetailsCompact(
     item: ContentHolder,
     currentItemPath: String,
-    isHighlighted: Boolean
+    isHighlighted: Boolean,
+    versi: Int
 ) {
     Isolate {
         var details by remember(
             key1 = currentItemPath,
-            key2 = item.lastModified
+            key2 = item.lastModified,
+            key3 = versi
         ) { mutableStateOf(emptyString) }
 
         LaunchedEffect(
             key1 = currentItemPath,
-            key2 = item.lastModified
+            key2 = item.lastModified,
+            key3 = versi
         ) {
-            if (details.isEmpty()) {
-                val det = item.getDetails()
-                withContext(Dispatchers.Main) { details = det }
-            }
+            val det = item.getDetails()
+            withContext(Dispatchers.Main) { details = det }
         }
 
         Text(

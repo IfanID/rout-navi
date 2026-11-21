@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.HistoryToggleOff
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.FileCopy
 import androidx.compose.material.icons.rounded.FormatColorText
@@ -61,6 +62,7 @@ import com.rout.navi.common.block
 import com.rout.navi.common.detectVerticalSwipe
 import com.rout.navi.common.ui.Space
 import com.rout.navi.screen.main.tab.files.FilesTab
+import com.rout.navi.screen.main.tab.files.misc.CategoryChoice
 import com.rout.navi.screen.main.tab.files.task.CopyTask
 
 @Composable
@@ -214,16 +216,26 @@ fun BottomOptionsBar(tab: FilesTab) {
                         }
                     )
             ) {
-                // Delete
+                // Delete. Di tab riwayat, yang dihapus adalah catatan riwayatnya,
+                // bukan berkas video di penyimpanan.
+                val inHistory = tab.categoryChoice is CategoryChoice.History
                 IconButton(
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        tab.toggleDeleteConfirmationDialog(true)
+                        if (inHistory) {
+                            tab.showDeleteHistoryDialog = true
+                        } else {
+                            tab.toggleDeleteConfirmationDialog(true)
+                        }
                     }
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Delete,
-                        contentDescription = null,
+                        imageVector = if (inHistory) Icons.Rounded.HistoryToggleOff
+                        else Icons.Rounded.Delete,
+                        contentDescription = stringResource(
+                            if (inHistory) R.string.remove_from_history
+                            else R.string.delete
+                        ),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -337,15 +349,32 @@ fun BottomOptionsBar(tab: FilesTab) {
             }
 
             BottomOptionsBarButton(Icons.Rounded.MoreVert, stringResource(R.string.options)) {
-                tab.toggleFileOptionsMenu(tab.selectedFiles[tab.selectedFiles.keys.first()]!!)
+                // Di halaman riwayat, menu opsi hanya berisi aksi riwayat.
+                if (tab.categoryChoice is CategoryChoice.History) {
+                    tab.showHistorySelectionMenu = true
+                } else {
+                    tab.toggleFileOptionsMenu(tab.selectedFiles[tab.selectedFiles.keys.first()]!!)
+                }
             }
         } else {
             BottomOptionsBarButton(Icons.AutoMirrored.Rounded.Sort, stringResource(R.string.sort)) {
-                tab.toggleSortingMenu(true)
+                // Di tab riwayat, urutan diatur lewat menu khusus riwayat.
+                if (tab.categoryChoice is CategoryChoice.History) {
+                    tab.showHistorySortMenu = true
+                } else {
+                    tab.toggleSortingMenu(true)
+                }
             }
 
             BottomOptionsBarButton(Icons.Rounded.Bookmark, stringResource(R.string.bookmarks)) {
                 tab.toggleBookmarksDialog(true)
+            }
+
+            // Di riwayat, isi menu ini adalah kosongkan seluruh catatan.
+            if (tab.categoryChoice is CategoryChoice.History) {
+                BottomOptionsBarButton(Icons.Rounded.MoreVert, stringResource(R.string.options)) {
+                    tab.showHistoryOptionsMenu = true
+                }
             }
         }
     }

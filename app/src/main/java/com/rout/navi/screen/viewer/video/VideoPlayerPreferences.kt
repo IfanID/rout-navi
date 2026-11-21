@@ -62,6 +62,13 @@ class VideoPlayerPreferences private constructor(context: Context) {
     )
         private set
 
+    // Video yang pernah ditonton dilanjutkan dari posisi terakhir. Bila
+    // dimatikan, semua video dimulai dari awal seperti pemutar biasa.
+    var resumePlayback by mutableStateOf(
+        prefs.getBoolean(KEY_RESUME_PLAYBACK, true)
+    )
+        private set
+
     var fastPlaySpeed by mutableFloatStateOf(
         prefs.getInt(KEY_FASTPLAY_SPEED, 20) / 10f
     )
@@ -105,6 +112,10 @@ class VideoPlayerPreferences private constructor(context: Context) {
         fastPlay = it
     }
 
+    fun updateResumePlayback(value: Boolean) = putBoolean(KEY_RESUME_PLAYBACK, value) {
+        resumePlayback = it
+    }
+
     fun updateFastPlaySpeed(speed: Float) {
         val safe = speed.coerceIn(1.1f, 8f)
         fastPlaySpeed = safe
@@ -129,6 +140,7 @@ class VideoPlayerPreferences private constructor(context: Context) {
         const val KEY_DOUBLE_TAP_PLAY = "enable_double_tap_play"
         const val KEY_FASTPLAY = "enable_fastplay"
         const val KEY_FASTPLAY_SPEED = "fastplay_speed"
+        const val KEY_RESUME_PLAYBACK = "resume_playback"
 
         @Volatile
         private var instance: VideoPlayerPreferences? = null

@@ -2,6 +2,7 @@ package com.rout.navi.screen.main.tab.files
 
 import android.app.PendingIntent
 import android.content.Context
+import android.os.SystemClock
 import android.content.Intent
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
@@ -33,6 +34,7 @@ import com.rout.navi.screen.main.tab.files.holder.LocalFileHolder
 import com.rout.navi.screen.main.tab.files.holder.RootLocalFileHolder
 import com.rout.navi.screen.main.tab.files.holder.VirtualFileHolder
 import com.rout.navi.screen.main.tab.files.holder.ZipFileHolder
+import com.rout.navi.screen.main.tab.files.misc.CategoryChoice
 import com.rout.navi.screen.main.tab.files.misc.FileListCategory
 import com.rout.navi.screen.main.tab.files.misc.FileMimeType.anyFileType
 import com.rout.navi.screen.main.tab.files.misc.FileMimeType.apkFileType
@@ -48,6 +50,8 @@ import com.rout.navi.screen.main.tab.files.task.ExtractTaskParameters
 import com.rout.navi.screen.main.tab.files.zip.ZipTree
 import com.reandroid.archive.ZipAlign
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -118,6 +122,107 @@ class FilesTab(
     var categories = mutableStateListOf<FileListCategory>()
     var selectedCategory by mutableStateOf<FileListCategory?>(null)
 
+    /**
+     * Tab kategori yang sedang dipilih. Setter meneruskannya ke kotak folder
+     * aktif, karena kotak itu yang dipakai saat daftar disusun ulang. Pilihan
+     * folder terakhir disimpan di [lastFolderChoice] supaya kembali ke tab
+     * Video menampilkan folder yang sama, bukan SEMUA.
+     */
+    private var categoryChoiceState by mutableStateOf<CategoryChoice>(CategoryChoice.All)
+
+    /** Folder terakhir sebelum masuk tab riwayat. */
+    private var lastFolderChoice: CategoryChoice = CategoryChoice.All
+
+    /** Folder terakhir sebelum halaman riwayat dibuka. */
+    private var folderSebelumRiwayat: ContentHolder? = null
+
+    /**
+     * Membuka halaman riwayat dari halaman berkas mana pun. Folder yang sedang
+     * dibuka dicatat dulu agar tombol kembali mengarah ke sana.
+     */
+    fun bukaRiwayat() {
+        folderSebelumRiwayat = activeFolder
+        categoryChoice = CategoryChoice.History
+        reloadFiles()
+    }
+
+    /** Kembali dari riwayat ke halaman berkas sebelumnya. */
+    fun tutupRiwayat() {
+        val tujuan = folderSebelumRiwayat ?: homeDir
+        // Pilihan folder terakhir dipulihkan, bukan dikembalikan ke SEMUA,
+        // supaya kembali dari riwayat membuka sub tab yang tadi dipakai.
+        categoryChoice = lastFolderChoice
+        openFolder(tujuan, rememberListState = false)
+    }
+
+    /** Menu urutan khusus riwayat sedang dibuka. */
+    var showHistorySortMenu by mutableStateOf(false)
+
+    /** Menu opsi riwayat (bersihkan semua). */
+    var showHistoryOptionsMenu by mutableStateOf(false)
+
+    /** Konfirmasi hapus catatan riwayat di tab riwayat. */
+    var showDeleteHistoryDialog by mutableStateOf(false)
+
+    /** Konfirmasi mengosongkan seluruh riwayat. */
+    var showClearHistoryDialog by mutableStateOf(false)
+
+    /** Menu aksi mode pilih di halaman riwayat. */
+    var showHistorySelectionMenu by mutableStateOf(false)
+
+    /**
+     * Salinan ringkas riwayat yang selalu terbaru. Dipakai bar riwayat di
+     * semua halaman, jadi tidak perlu menunggu penyegaran daftar berkas.
+     */
+    val salinanRiwayat = mutableStateListOf<LocalFileHolder>()
+
+    /** Pemantau perubahan riwayat, hidup selama tab ada. */
+    private var pemantauRiwayat: Job? = null
+
+    /**
+     * Scope khusus pemantau riwayat. Dipisah dari [scope] karena scope itu
+     * dipakai pekerjaan daftar berkas yang bisa dibatalkan saat tab berpindah.
+     */
+    private val scopeTips = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    /** Penanda agar dua pemicu berdekatan tidak memuat riwayat dua kali. */
+    private var riwayatDimuatPada = 0L
+
+    /**
+     * Naik setiap tab ini aktif kembali. Daftar berkas memakainya untuk
+     * menghitung ulang keterangan, sehingga kemajuan tontonan langsung tampil
+     * setelah kembali dari pemutar.
+     */
+    val tabResumeVersi = kotlinx.coroutines.flow.MutableStateFlow(0)
+
+    /**
+     * Tombol Histori hanya untuk tab yang bersumber dari galeri Video. Di tab
+     * Dokumen, Gambar, atau Audio tombol itu tidak relevan.
+     */
+    val showsHistoryButton: Boolean
+        get() = source is VirtualFileHolder &&
+                (source as VirtualFileHolder).type == VirtualFileHolder.VIDEO
+
+    var categoryChoice: CategoryChoice
+        get() = categoryChoiceState
+        set(value) {
+            categoryChoiceState = value
+            if (value !is CategoryChoice.History) lastFolderChoice = value
+            val holder = activeFolder as? VirtualFileHolder ?: return
+            holder.historyChosen = value is CategoryChoice.History
+            holder.chosenFolderPath = (value as? CategoryChoice.Folder)?.path
+        }
+
+    /**
+     * Kembali dari riwayat ke halaman sebelumnya. Sub tab yang dipilih terakhir
+     * dipulihkan, jadi kembali ke galeri Video membuka folder yang sama.
+     */
+    fun leaveHistoryCategory() {
+        if (categoryChoiceState is CategoryChoice.History) {
+            tutupRiwayat()
+        }
+    }
+
     // Holds the file that has been long-clicked
     var targetFile: ContentHolder? = null
     var compressTaskHolder: CompressTask? = null
@@ -149,6 +254,17 @@ class FilesTab(
 
     override fun onTabStarted() {
         super.onTabStarted()
+        // Pemantau perubahan riwayat dipasang sekali dan hidup selama tab ada,
+        // bukan hanya saat tab aktif. Dengan begitu bar riwayat dan halaman
+        // riwayat langsung benar di tab mana pun, seperti daftar riwayat VLC
+        // yang dibaca ulang setiap kali media dibuka.
+        if (pemantauRiwayat == null) {
+            pemantauRiwayat = scopeTips.launch {
+                globalClass.preferencesManager.historyVersion.collect {
+                    muatUlangRiwayat()
+                }
+            }
+        }
         // Load either the source file or the home tab
         scope.launch {
             if (source.isFile()) { // This is true when locating a file
@@ -184,6 +300,14 @@ class FilesTab(
     }
 
     override fun onTabResumed() {
+        // Keterangan berkas dihitung ulang setelah kembali dari pemutar atau
+        // aplikasi lain, supaya kemajuan tontonan tidak tertinggal.
+        tabResumeVersi.value += 1
+        scope.launch {
+            // Riwayat dimuat ulang di sini juga, jadi bar riwayat dan halaman
+            // riwayat sudah benar tanpa menunggu penyegaran manual.
+            muatUlangRiwayat()
+        }
         scope.launch {
             validateActiveFolder()
             // Important to clear any information from previous tabs (when switching tabs)
@@ -192,6 +316,26 @@ class FilesTab(
             detectFileChanges()
             // Check for display mode change
             updateDisplayConfig()
+        }
+    }
+
+    /**
+     * Memuat ulang ringkasan riwayat. Dipanggil saat tab aktif dan saat
+     * penanda perubahan riwayat naik, jadi bar dan daftar riwayat tidak perlu
+     * menunggu penyegaran berkas.
+     */
+    suspend fun muatUlangRiwayat() {
+        // Pemuatan yang berdekatan dilewati supaya tidak ada kedip dua kali.
+        if (SystemClock.elapsedRealtime() - riwayatDimuatPada < 300L) return
+        riwayatDimuatPada = SystemClock.elapsedRealtime()
+
+        val daftar = withContext(Dispatchers.IO) { StorageProvider.getWatchHistory() }
+        salinanRiwayat.clear()
+        salinanRiwayat.addAll(daftar)
+        // Halaman riwayat ikut disusun ulang dari ringkasan yang baru.
+        if (categoryChoice is CategoryChoice.History) {
+            activeFolderContent.clear()
+            activeFolderContent.addAll(daftar)
         }
     }
 
@@ -448,6 +592,12 @@ class FilesTab(
             item.selectedCategory = selectedCategory
         }
 
+        // Folder sebelum masuk riwayat diingat, supaya kembali dari halaman
+        // riwayat membuka folder yang sama, bukan galeri kosong.
+        if (categoryChoice !is CategoryChoice.History) {
+            folderSebelumRiwayat = item
+        }
+
         // Switch to the new folder
         activeFolder = item
 
@@ -522,6 +672,20 @@ class FilesTab(
                 categories.clear()
                 categories.addAll((activeFolder as VirtualFileHolder).getCategories())
                 showCategories = categories.isNotEmpty()
+                // Sinkronkan tab dengan pilihan yang tersimpan di kotak folder,
+                // supaya tab tidak kembali ke SEMUA setelah penyegaran. Kotak
+                // folder hanya memakai tab folder dan riwayat untuk halaman
+                // media seperti Video.
+                val folder = activeFolder as VirtualFileHolder
+                val holdsCategories = folder.type == VirtualFileHolder.VIDEO ||
+                        folder.type == VirtualFileHolder.IMAGE ||
+                        folder.type == VirtualFileHolder.AUDIO
+                categoryChoiceState = when {
+                    folder.historyChosen -> CategoryChoice.History
+                    holdsCategories && folder.chosenFolderPath != null ->
+                        CategoryChoice.Folder(folder.chosenFolderPath!!)
+                    else -> CategoryChoice.All
+                }
             } else {
                 showCategories = false
             }
