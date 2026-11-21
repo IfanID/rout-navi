@@ -26,6 +26,7 @@ lifecycle_runtime_compose_android = "2.11.0"
 activity_compose = "1.13.0"
 lifecycle_runtime_ktx = "2.11.0"
 coilCompose = "3.6.3"
+jxlCoderCoil = "2.6.1"
 zip4j = "2.11.6"
 commonsCompress = "1.28.0"
 junrar = "8.1.2"
@@ -56,6 +57,7 @@ apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
 coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coilCompose" }
 coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coilCompose" }
 coil-video = { module = "io.coil-kt.coil3:coil-video", version.ref = "coilCompose" }
+jxl-coder-coil = { module = "io.github.awxkee:jxl-coder-coil", version.ref = "jxlCoderCoil" }
 commons-net = { module = "commons-net:commons-net", version.ref = "commonsNet" }
 desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 grid = { module = "com.cheonjaeung.compose.grid:grid", version.ref = "grid" }

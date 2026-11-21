@@ -49,6 +49,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import android.content.pm.ActivityInfo
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -106,6 +107,20 @@ fun VideoPlayerScreen(
     var fastPlayPressed by remember { mutableStateOf(false) }
     var fastPlayStarted by remember { mutableStateOf(false) }
     val hintSlidePx = with(LocalDensity.current) { 6.dp.roundToPx() }
+
+    // Orientasi layar mengikuti pilihan pengguna. Mode otomatis membaca
+    // bentuk video dari state; ukuran itu sudah dikoreksi mesin pemutar,
+    // termasuk video yang diberi penanda putar. Efek ini berjalan ulang saat
+    // ukuran video baru diketahui. Saat pemutar ditutup, orientasi
+    // dikembalikan ke sistem supaya aktivitas lain tidak ikut terkunci.
+    DisposableEffect(prefs.orientationMode, state.videoWidth, state.videoHeight) {
+        val mode = prefs.orientationMode
+        activity?.requestedOrientation =
+            mode.resolve(state.videoWidth, state.videoHeight)
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
 
     val subtitlePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -299,6 +314,10 @@ fun VideoPlayerScreen(
                     onSeekTo = { videoPlayerInstance.seekTo(it) },
                     onPickTracks = { showTracksPicker = true },
                     onChangeScale = { videoPlayerInstance.cycleScaleMode() },
+                    onCycleOrientation = {
+                        prefs.updateOrientationMode(prefs.orientationMode.nextForHud)
+                    },
+                    orientationMode = prefs.orientationMode,
                     onShowMore = { showMoreOptions = true }
                 )
             }

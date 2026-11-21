@@ -12,9 +12,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Brightness6
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.rounded.ScreenRotation
 import androidx.compose.material.icons.rounded.Swipe
 import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.ZoomOutMap
@@ -32,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rout.navi.R
 import com.rout.navi.screen.preferences.ui.PreferenceItem
+import com.rout.navi.screen.viewer.video.OrientationMode
 import com.rout.navi.screen.viewer.video.VideoPlayerPreferences
 
 /**
@@ -178,6 +181,49 @@ fun VideoPlayerSettingsBody(
             enabled = prefs.fastPlay,
             onValueChange = { prefs.updateFastPlaySpeed(it) }
         )
+
+        SectionTitle(stringResource(R.string.video_playback_section))
+
+        PreferenceItem(
+            label = stringResource(R.string.video_resume_playback),
+            supportingText = stringResource(R.string.video_resume_playback_summary),
+            icon = Icons.Rounded.PlayCircle,
+            switchState = prefs.resumePlayback,
+            onSwitchChange = prefs::updateResumePlayback
+        )
+
+        SectionTitle(stringResource(R.string.video_orientation_section))
+
+        // Setiap mode ditandai bila aktif; penanda memakai ikon yang sama
+        // dengan tombol rotasi di pemutar supaya kedua tempat terasa satu fitur.
+        listOf(
+            OrientationMode.AUTO_VIDEO to stringResource(R.string.video_orientation_auto),
+            OrientationMode.LANDSCAPE to stringResource(R.string.video_orientation_landscape),
+            OrientationMode.PORTRAIT to stringResource(R.string.video_orientation_portrait),
+            OrientationMode.SENSOR_LANDSCAPE to
+                    stringResource(R.string.video_orientation_sensor_landscape),
+            OrientationMode.SENSOR_PORTRAIT to
+                    stringResource(R.string.video_orientation_sensor_portrait)
+        ).forEach { (mode, label) ->
+            PreferenceItem(
+                label = label,
+                supportingText = if (mode == OrientationMode.AUTO_VIDEO) {
+                    stringResource(R.string.video_orientation_auto_summary)
+                } else {
+                    ""
+                },
+                icon = Icons.Rounded.ScreenRotation,
+                onClick = { prefs.updateOrientationMode(mode) },
+                trailingContent = {
+                    if (prefs.orientationMode == mode) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = stringResource(R.string.selected)
+                        )
+                    }
+                }
+            )
+        }
     }
 }
 

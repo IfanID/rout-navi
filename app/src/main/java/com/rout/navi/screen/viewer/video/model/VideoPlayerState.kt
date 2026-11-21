@@ -31,5 +31,9 @@ data class VideoPlayerState(
     val subtitleTracks: List<VideoTrackInfo> = emptyList(),
     val selectedAudioTrack: Int = -1,
     val selectedSubtitleTrack: Int = -1,
-    val scaleMode: VideoScaleMode = VideoScaleMode.BEST_FIT
+    val scaleMode: VideoScaleMode = VideoScaleMode.BEST_FIT,
+    // Lebar dan tinggi video dalam piksel. Dipakai mode orientasi otomatis
+    // untuk memilih potret atau lanskap mengikuti rasio video.
+    val videoWidth: Int = 0,
+    val videoHeight: Int = 0
 )

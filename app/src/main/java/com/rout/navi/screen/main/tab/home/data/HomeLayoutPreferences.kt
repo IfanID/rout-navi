@@ -58,20 +58,6 @@ fun getDefaultHomeLayout(minimalLayout: Boolean = false) = HomeLayout(
             title = globalClass.getString(R.string.pinned_files),
             isEnabled = !minimalLayout,
             order = 5
-        ),
-        HomeSectionConfig(
-            id = HomeSectionIds.RECYCLE_BIN,
-            type = HomeSectionType.RECYCLE_BIN,
-            title = globalClass.getString(R.string.recycle_bin),
-            isEnabled = !minimalLayout,
-            order = 6
-        ),
-        HomeSectionConfig(
-            id = HomeSectionIds.JUMP_TO_PATH,
-            type = HomeSectionType.JUMP_TO_PATH,
-            title = globalClass.getString(R.string.jump_to_path),
-            isEnabled = !minimalLayout,
-            order = 7
         )
     )
 )

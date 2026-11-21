@@ -112,6 +112,7 @@ dependencies {
     implementation(libs.coil.gif)
     implementation(libs.coil.svg)
     implementation(libs.coil.video)
+    implementation(libs.jxl.coder.coil)
     implementation(libs.zoomable.image.coil3)
     implementation(libs.okio)
 

@@ -155,7 +155,7 @@ object FileMimeType {
 
     @JvmField
     val imageFileType = arrayOf(
-        "png", "jpeg", "jpg", "heic", "tiff", "gif", "webp", svgFileType, "bmp", "raw"
+        "png", "jpeg", "jpg", "heic", "tiff", "gif", "webp", svgFileType, "bmp", "raw", "jxl"
     )
 
     // Sama seperti daftar video, mencakup format audio yang didukung libVLC.

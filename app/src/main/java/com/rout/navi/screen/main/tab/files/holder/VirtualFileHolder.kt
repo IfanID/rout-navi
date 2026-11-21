@@ -13,6 +13,7 @@ import com.rout.navi.screen.main.tab.files.provider.StorageProvider.getImageFile
 import com.rout.navi.screen.main.tab.files.provider.StorageProvider.getRecentFiles
 import com.rout.navi.screen.main.tab.files.provider.StorageProvider.getSearchResult
 import com.rout.navi.screen.main.tab.files.provider.StorageProvider.getVideoFiles
+import com.rout.navi.screen.main.tab.files.provider.StorageProvider.getWatchHistory
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
@@ -20,6 +21,15 @@ class VirtualFileHolder(val type: Int) : ContentHolder() {
     private var fileCount = 0
     private val contentList = arrayListOf<ContentHolder>()
     private val categories = arrayListOf<String>()
+
+    /**
+     * Pilihan tab folder, disimpan di kotak ini supaya tidak hilang saat
+     * daftar disegarkan. [categoryChoice] di FilesTab hanya cermin untuk UI.
+     */
+    var chosenFolderPath: String? = null
+
+    /** Tab riwayat tontonan dipakai, daftarnya diambil dari riwayat pemutar. */
+    var historyChosen = false
 
     var selectedCategory: FileListCategory? = null
 
@@ -54,6 +64,12 @@ class VirtualFileHolder(val type: Int) : ContentHolder() {
             return super.listSortedContent()
         }
 
+        // Riwayat tontonan sudah berurutan dari yang terbaru; preferensi
+        // pengurutan berkas tidak dipakai di sini.
+        if (historyChosen) {
+            return listContent()
+        }
+
         val sortingPrefs = globalClass.preferencesManager.getSortingPrefsFor(this)
 
         if (type == RECENT && sortingPrefs == globalClass.preferencesManager.getDefaultSortingPrefs()) {
@@ -74,7 +90,8 @@ class VirtualFileHolder(val type: Int) : ContentHolder() {
         when (type) {
             BOOKMARKS -> getBookmarks()
             AUDIO -> getAudioFiles(sortingPrefs)
-            VIDEO -> getVideoFiles(sortingPrefs)
+            // Tab riwayat di halaman Video memakai daftar riwayat pemutar.
+            VIDEO -> if (historyChosen) getWatchHistory() else getVideoFiles(sortingPrefs)
             IMAGE -> getImageFiles(sortingPrefs)
             ARCHIVE -> getArchiveFiles(sortingPrefs)
             DOCUMENT -> getDocumentFiles(sortingPrefs)
@@ -86,13 +103,22 @@ class VirtualFileHolder(val type: Int) : ContentHolder() {
                 clear()
                 addAll(it)
             }
-            if (type != BOOKMARKS) fetchCategories()
+            // Riwayat sudah berurutan dari yang terbaru, jadi tab folder tidak
+            // perlu disusun dan pilihan tab tidak boleh diganggu.
+            if (type != BOOKMARKS && type != RECENT && !historyChosen) fetchCategories()
         }
 
-        return contentList.filter {
-            if (selectedCategory == null) return@filter true
-            it.uniquePath == (selectedCategory!!.data as File).path + File.separator + it.displayName
-        }.toCollection(arrayListOf()).also { fileCount = it.size }
+        // Riwayat tidak disaring per folder; isinya memang lintas folder.
+        if (historyChosen) {
+            fileCount = contentList.size
+            return contentList
+        }
+
+        val folderPath = chosenFolderPath
+        return contentList
+            .filter { folderPath == null || it.uniquePath == folderPath + File.separator + it.displayName }
+            .toCollection(arrayListOf())
+            .also { fileCount = it.size }
     }
 
     private fun fetchCategories() {

@@ -115,6 +115,12 @@ fun ColumnScope.HomeTabContentView(tab: HomeTab) {
                     logger.logError(e)
                     getDefaultHomeLayout()
                 }.getSections().filter { it.isEnabled }.sortedBy { it.order }
+                    // Keranjang sampah dan lompat ke path kini berupa tombol di
+                    // toolbar, jadi section lamanya tidak dirender lagi.
+                    .filter {
+                        it.type != HomeSectionType.RECYCLE_BIN &&
+                                it.type != HomeSectionType.JUMP_TO_PATH
+                    }
 
                 enabledSections.addAll(config)
             }
@@ -141,7 +147,13 @@ fun ColumnScope.HomeTabContentView(tab: HomeTab) {
                     addAll(getDefaultHomeLayout(true).getSections().filter { it.isEnabled }
                         .sortedBy { it.order })
                 } else {
-                    addAll(sections.filter { it.isEnabled }.sortedBy { it.order })
+                    addAll(
+                        sections.filter {
+                            it.isEnabled &&
+                                    it.type != HomeSectionType.RECYCLE_BIN &&
+                                    it.type != HomeSectionType.JUMP_TO_PATH
+                        }.sortedBy { it.order }
+                    )
                 }
 
             }
@@ -167,7 +179,10 @@ fun ColumnScope.HomeTabContentView(tab: HomeTab) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         enabledSections.forEach { section ->
+            // Kedua section yang sudah pindah ke toolbar tidak pernah masuk
+            // daftar ini karena sudah disaring saat dimuat.
             when (section.type) {
+                HomeSectionType.RECYCLE_BIN, HomeSectionType.JUMP_TO_PATH -> Unit
                 HomeSectionType.RECENT_FILES -> {
                     RecentFilesSection(tab = tab, mainActivityManager = mainActivityManager)
                 }
@@ -186,14 +201,6 @@ fun ColumnScope.HomeTabContentView(tab: HomeTab) {
 
                 HomeSectionType.BOOKMARKS -> {
                     BookmarksSection(mainActivityManager = mainActivityManager)
-                }
-
-                HomeSectionType.RECYCLE_BIN -> {
-                    RecycleBinSection(mainActivityManager = mainActivityManager)
-                }
-
-                HomeSectionType.JUMP_TO_PATH -> {
-                    JumpToPathSection(mainActivityManager = mainActivityManager)
                 }
 
                 HomeSectionType.PINNED_FILES -> {
@@ -692,34 +699,6 @@ private fun RecycleBinSection(
             imageVector = Icons.Rounded.DeleteSweep
         ) {
             mainActivityManager.replaceCurrentTabWith(FilesTab(globalClass.recycleBinDir))
-        }
-    }
-}
-
-@Composable
-private fun JumpToPathSection(
-    mainActivityManager: MainActivityManager
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .background(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerLow
-            )
-            .border(
-                width = 0.5.dp,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clip(RoundedCornerShape(12.dp))
-    ) {
-        SimpleNewTabViewItem(
-            title = stringResource(R.string.jump_to_path),
-            imageVector = Icons.Rounded.ArrowOutward
-        ) {
-            mainActivityManager.toggleJumpToPathDialog(true)
         }
     }
 }

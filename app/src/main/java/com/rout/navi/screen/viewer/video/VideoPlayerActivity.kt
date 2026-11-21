@@ -11,6 +11,11 @@ import com.rout.navi.theme.FileExplorerTheme
 
 class VideoPlayerActivity : ViewerActivity() {
 
+    companion object {
+        /** Posisi awal dalam milidetik; -1 berarti mulai dari awal. */
+        const val EXTRA_START_POSITION = "start_position"
+    }
+
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         // Tombol kembali sistem juga mematikan audio seketika, bukan menunggu
@@ -47,7 +52,11 @@ class VideoPlayerActivity : ViewerActivity() {
             others.forEach { runCatching { it.onClose() } }
             manager.instances.removeAll(others.toSet())
         }
-        return VideoPlayerInstance(uri, uid)
+        return VideoPlayerInstance(
+            uri = uri,
+            id = uid,
+            startPositionMs = intent.getLongExtra(EXTRA_START_POSITION, 0L)
+        )
     }
 
     override fun onStart() {

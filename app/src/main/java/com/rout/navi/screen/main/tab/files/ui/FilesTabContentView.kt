@@ -6,12 +6,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.rout.navi.App.Companion.globalClass
 import com.rout.navi.screen.main.tab.files.FilesTab
 import com.rout.navi.screen.main.tab.files.holder.LocalFileHolder
 import com.rout.navi.screen.main.tab.files.ui.dialog.ApkPreviewDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.ArchivePasswordDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.BookmarksDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.CreateNewFileDialog
+import com.rout.navi.screen.main.tab.files.ui.dialog.ClearHistoryDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.DeleteConfirmationDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.ExtractArchiveDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.FileCompressionDialog
@@ -19,13 +21,17 @@ import com.rout.navi.screen.main.tab.files.ui.dialog.FileOptionsMenuDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.FilePropertiesDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.FileSortingMenuDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.FileViewConfigDialog
+import com.rout.navi.screen.main.tab.files.ui.dialog.HistorySortingMenuDialog
+import com.rout.navi.screen.main.tab.files.ui.dialog.HistoryOptionsMenu
 import com.rout.navi.screen.main.tab.files.ui.dialog.ImportPrefsDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.OpenWithAppListDialog
+import com.rout.navi.screen.main.tab.files.ui.dialog.RemoveHistoryDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.RenameDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.SearchDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.TaskConflictDialog
 import com.rout.navi.screen.main.tab.files.ui.dialog.TaskPanel
 import com.rout.navi.screen.main.tab.files.ui.dialog.TaskRunningDialog
+import kotlinx.coroutines.launch
 
 @Composable
 fun ColumnScope.FilesTabContentView(tab: FilesTab) {
@@ -73,6 +79,36 @@ fun Dialogs(tab: FilesTab) {
             tab.toggleSortingMenu(false)
             tab.reloadFiles()
         }
+    )
+
+    HistorySortingMenuDialog(
+        show = tab.showHistorySortMenu,
+        tab = tab,
+        onDismissRequest = { tab.showHistorySortMenu = false }
+    )
+
+    RemoveHistoryDialog(
+        show = tab.showDeleteHistoryDialog,
+        tab = tab,
+        onDismissRequest = { tab.showDeleteHistoryDialog = false }
+    )
+
+    HistoryOptionsMenu(
+        show = tab.showHistoryOptionsMenu,
+        tab = tab,
+        onDismissRequest = { tab.showHistoryOptionsMenu = false }
+    )
+
+    ClearHistoryDialog(
+        show = tab.showClearHistoryDialog,
+        onConfirm = {
+            tab.scope.launch {
+                globalClass.preferencesManager.clearWatchHistory()
+                tab.selectedFiles.clear()
+                tab.reloadFiles()
+            }
+        },
+        onDismissRequest = { tab.showClearHistoryDialog = false }
     )
 
     FileViewConfigDialog(

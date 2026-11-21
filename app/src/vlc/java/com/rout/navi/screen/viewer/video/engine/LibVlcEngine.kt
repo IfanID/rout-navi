@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
+import org.videolan.libvlc.interfaces.IMedia
 import org.videolan.libvlc.util.VLCVideoLayout
 import java.io.File
 
@@ -98,6 +99,13 @@ class LibVlcEngine(
 
     // ------------------------------------------------------------ pemutaran
 
+    // Posisi awal dari riwayat, dibaca sekali saat prepare.
+    private var pendingStartPosition = 0L
+
+    override var startPositionMs: Long
+        get() = pendingStartPosition
+        set(value) { pendingStartPosition = value.coerceAtLeast(0L) }
+
     override suspend fun prepare() {
         if (released) return
         if (prepared) {
@@ -152,6 +160,12 @@ class LibVlcEngine(
                 activePlayer.setEventListener { event -> handleEvent(event) }
                 VideoPlayerLog.info("play() dipanggil")
                 activePlayer.play()
+                // Lanjut dari posisi terakhir bila riwayat menyimpannya.
+                val start = startPositionMs
+                if (start > 0) {
+                    activePlayer.time = start
+                    VideoPlayerLog.info("libvlc mulai dari posisi $start")
+                }
             }
             startPositionTracking()
         } catch (e: Throwable) {
@@ -204,7 +218,7 @@ class LibVlcEngine(
                         duration = player.length
                     )
                 }
-                loadSiblingSubtitleOnce()
+                loadInitialSubtitleOnce()
                 refreshTracks()
             }
 
@@ -239,6 +253,7 @@ class LibVlcEngine(
 
             MediaPlayer.Event.Vout -> {
                 VideoPlayerLog.info("vout muncul attached=$viewsAttached")
+                simpanUkuranVideo()
                 state.update { it.copy(isReady = true) }
             }
 
@@ -384,47 +399,92 @@ class LibVlcEngine(
         }
     }
 
+    /**
+     * Ukuran video libVLC dibaca dari hasil parse media, bukan dari daftar
+     * track pemutar yang hanya berisi nama. Dipanggil saat vout muncul supaya
+     * orientasi otomatis punya data sejak awal pemutaran, tanpa menunggu
+     * frame pertama.
+     *
+     * libVLC tidak menukar lebar dan tinggi untuk video yang diputar 90
+     * derajat (format ponsel), jadi penukarannya dilakukan di sini mengikuti
+     * cara VLC sendiri: orientasi LeftBottom dan RightTop berarti dimensi
+     * bertukar.
+     */
+    private fun simpanUkuranVideo() {
+        val media = media ?: return
+        runCatching {
+            if (media.trackCount <= 0) {
+                media.parse(IMedia.Parse.ParseLocal)
+            }
+            val videoTrack = (0 until media.trackCount)
+                .mapNotNull { media.getTrack(it) as? IMedia.VideoTrack }
+                .firstOrNull { it.width > 0 && it.height > 0 }
+                ?: return
+            val diputar = videoTrack.orientation == IMedia.VideoTrack.Orientation.LeftBottom ||
+                    videoTrack.orientation == IMedia.VideoTrack.Orientation.RightTop
+            val lebar = if (diputar) videoTrack.height else videoTrack.width
+            val tinggi = if (diputar) videoTrack.width else videoTrack.height
+            VideoPlayerLog.info("ukuran video ${videoTrack.width}x${videoTrack.height} putar=$diputar")
+            state.update { it.copy(videoWidth = lebar, videoHeight = tinggi) }
+        }
+    }
+
     override fun selectAudioTrack(trackId: Int) {
         player?.audioTrack = trackId
         refreshTracks()
     }
 
     override fun selectSubtitleTrack(trackId: Int) {
+        // "Tidak ada" juga membuang simpanan, sama seperti varian Media3.
+        if (trackId < 0) SubtitleFiles.clearFor(uri)
         player?.spuTrack = trackId
         refreshTracks()
     }
 
     override fun addSubtitle(uri: Uri) {
         val player = player ?: return
+        val videoUri = this.uri
         scope.launch {
-            val cached = withContext(Dispatchers.IO) { SubtitleFiles.copyToCache(uri) }
-                ?: return@launch
+            val stored = withContext(Dispatchers.IO) { SubtitleFiles.saveFor(videoUri, uri) }
+            if (stored == null) {
+                VideoPlayerLog.error("subtitle gagal disalin dari $uri")
+                state.update {
+                    it.copy(error = globalClass.getString(R.string.video_subtitle_failed))
+                }
+                return@launch
+            }
             runCatching {
                 player.addSlave(
                     org.videolan.libvlc.interfaces.IMedia.Slave.Type.Subtitle,
-                    Uri.fromFile(cached),
+                    Uri.fromFile(stored),
                     true
                 )
             }.onSuccess {
-                VideoPlayerLog.info("subtitle ditambahkan ${cached.absolutePath}")
+                VideoPlayerLog.info("subtitle ditambahkan ${stored.absolutePath}")
                 refreshTracks()
             }.onFailure { VideoPlayerLog.error(it) }
         }
     }
 
-    /** Memuat subtitle bersebelahan nama berkas, sekali saja per pemutaran. */
-    private fun loadSiblingSubtitleOnce() {
+    /**
+     * Memuat subtitle awal sekali per pemutaran. Subtitle yang pernah dipilih
+     * untuk video ini didahulukan, baru kemudian subtitle bersebelahan nama.
+     */
+    private fun loadInitialSubtitleOnce() {
         if (subtitleLoaded) return
         subtitleLoaded = true
         val player = player ?: return
-        val candidate = SubtitleFiles.siblingOf(uri) ?: return
+        val saved = SubtitleFiles.savedFor(uri)
+        val candidate = saved ?: SubtitleFiles.siblingOf(uri) ?: return
         runCatching {
             player.addSlave(
                 org.videolan.libvlc.interfaces.IMedia.Slave.Type.Subtitle,
                 Uri.fromFile(candidate),
                 true
             )
-            VideoPlayerLog.info("subtitle bersebelahan ${candidate.name}")
+            VideoPlayerLog.info(
+                "subtitle awal ${if (saved != null) "tersimpan" else "bersebelahan"} ${candidate.name}"
+            )
         }
     }
 

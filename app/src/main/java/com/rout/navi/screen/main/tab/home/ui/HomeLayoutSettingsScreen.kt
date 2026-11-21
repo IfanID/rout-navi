@@ -114,6 +114,12 @@ fun HomeLayoutSettingsScreen(
                     logger.logError(e)
                     getDefaultHomeLayout()
                 }.getSections().sortedBy { it.order }
+                    // Section keranjang sampah dan lompat ke path sudah pindah
+                    // ke toolbar, jadi tidak lagi bisa diatur di sini.
+                    .filter {
+                        it.type != HomeSectionType.RECYCLE_BIN &&
+                                it.type != HomeSectionType.JUMP_TO_PATH
+                    }
 
                 sections.addAll(config)
             }

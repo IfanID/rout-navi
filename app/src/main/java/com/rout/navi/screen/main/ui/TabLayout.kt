@@ -7,12 +7,14 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -57,6 +59,7 @@ import com.rout.navi.screen.main.tab.Tab
 import com.rout.navi.screen.main.tab.apps.AppsTab
 import com.rout.navi.screen.main.tab.files.FilesTab
 import com.rout.navi.screen.main.tab.files.holder.LocalFileHolder
+import com.rout.navi.screen.main.tab.files.misc.CategoryChoice
 import com.rout.navi.screen.main.tab.home.HomeTab
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -170,11 +173,26 @@ fun TabLayout(
                             mutableStateOf(false)
                         }
 
+                        // Menekan tab Video saat sedang di riwayat berarti
+                        // kembali ke galeri, bukan sekadar membuka menu.
+                        val backFromHistory =
+                            isSelected && tab is FilesTab &&
+                                    tab.categoryChoice is CategoryChoice.History
+
+                        // Baris pembungkus: kotak tab tetap seperti biasa, lalu
+                        // tombol riwayat duduk di luarnya, di samping kanan.
+                        // Jarak ke tab sebelah kanan dipasang di sini, di luar
+                        // kotak tab, supaya tidak menempel ke tab berikutnya.
+                        Row(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(end = 4.dp),
+                            verticalAlignment = Alignment.Bottom
+                        ) {
                         Row(
                             modifier = Modifier
                                 .defaultMinSize(minWidth = 100.dp)
                                 .fillMaxHeight()
-                                .padding(end = 4.dp)
                                 .background(
                                     color = backgroundColorAnim.value,
                                     shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
@@ -186,6 +204,8 @@ fun TabLayout(
                                     onClick = {
                                         if (!isSelected) {
                                             mainActivityManager.selectTabAt(index)
+                                        } else if (backFromHistory) {
+                                            (tab as FilesTab).leaveHistoryCategory()
                                         } else {
                                             showTabHeaderMenu = true
                                         }
@@ -214,6 +234,23 @@ fun TabLayout(
                                     onDismiss = { showTabHeaderMenu = false }
                                 )
                             }
+                        }
+
+                        // Tombol riwayat untuk setiap tab berkas, duduk di
+                        // samping kanan kotak tab, di luar kotak itu sendiri.
+                        if (isSelected && tab is FilesTab && tab.showsHistoryButton) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            HistoryTabButton(
+                                selected = tab.categoryChoice is CategoryChoice.History,
+                                onClick = {
+                                    if (tab.categoryChoice is CategoryChoice.History) {
+                                        tab.leaveHistoryCategory()
+                                    } else {
+                                        tab.bukaRiwayat()
+                                    }
+                                }
+                            )
+                        }
                         }
                     }
                 }

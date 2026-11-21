@@ -17,8 +17,10 @@ import coil3.request.allowConversionToBitmap
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import coil3.video.VideoFrameDecoder
+import com.awxkee.jxlcoder.coil.JxlDecoder
 import com.rout.navi.coil.apk.ApkFileDecoder
 import com.rout.navi.coil.audio.AudioFileDecoder
+import com.rout.navi.coil.video.VideoCoverDecoder
 import com.rout.navi.coil.pdf.PdfFileDecoder
 import com.rout.navi.coil.zip.ZipFileFetcher
 import com.rout.navi.coil.zip.ZipFileKeyer
@@ -206,6 +208,12 @@ class App : Application(), coil3.SingletonImageLoader.Factory {
                 add(DocumentFileMapper())
                 add(GifDecoder.Factory())
                 add(SvgDecoder.Factory())
+                // JPEG XL tidak punya dekoder bawaan di Android, jadi
+                // didekode lewat pustaka libjxl sebelum jatuh ke dekoder lain.
+                add(JxlDecoder.Factory())
+                // Sampul tertanam dicoba lebih dulu; frame video hanya
+                // dipakai bila berkas tidak membawa sampul.
+                add(VideoCoverDecoder.Factory())
                 add(VideoFrameDecoder.Factory())
                 add(ApkFileDecoder.Factory())
                 add(PdfFileDecoder.Factory())

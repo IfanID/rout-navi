@@ -62,6 +62,25 @@ class VideoPlayerPreferences private constructor(context: Context) {
     )
         private set
 
+    // Video yang pernah ditonton dilanjutkan dari posisi terakhir. Bila
+    // dimatikan, semua video dimulai dari awal seperti pemutar biasa.
+    var resumePlayback by mutableStateOf(
+        prefs.getBoolean(KEY_RESUME_PLAYBACK, true)
+    )
+        private set
+
+    /**
+     * Orientasi layar pemutar. Nilai mengikuti enum [OrientationMode].
+     * Disimpan sebagai nama enum agar penambahan mode baru tidak merusak
+     * simpanan lama.
+     */
+    var orientationMode by mutableStateOf(
+        runCatching {
+            OrientationMode.valueOf(prefs.getString(KEY_ORIENTATION_MODE, null) ?: "")
+        }.getOrDefault(OrientationMode.AUTO_VIDEO)
+    )
+        private set
+
     var fastPlaySpeed by mutableFloatStateOf(
         prefs.getInt(KEY_FASTPLAY_SPEED, 20) / 10f
     )
@@ -105,6 +124,15 @@ class VideoPlayerPreferences private constructor(context: Context) {
         fastPlay = it
     }
 
+    fun updateResumePlayback(value: Boolean) = putBoolean(KEY_RESUME_PLAYBACK, value) {
+        resumePlayback = it
+    }
+
+    fun updateOrientationMode(value: OrientationMode) {
+        orientationMode = value
+        prefs.edit().putString(KEY_ORIENTATION_MODE, value.name).apply()
+    }
+
     fun updateFastPlaySpeed(speed: Float) {
         val safe = speed.coerceIn(1.1f, 8f)
         fastPlaySpeed = safe
@@ -129,6 +157,8 @@ class VideoPlayerPreferences private constructor(context: Context) {
         const val KEY_DOUBLE_TAP_PLAY = "enable_double_tap_play"
         const val KEY_FASTPLAY = "enable_fastplay"
         const val KEY_FASTPLAY_SPEED = "fastplay_speed"
+        const val KEY_RESUME_PLAYBACK = "resume_playback"
+        const val KEY_ORIENTATION_MODE = "orientation_mode"
 
         @Volatile
         private var instance: VideoPlayerPreferences? = null

@@ -25,6 +25,7 @@ import com.rout.navi.screen.main.tab.files.misc.StorageDeviceType.INTERNAL_STORA
 import com.rout.navi.screen.main.tab.files.misc.StorageDeviceType.ROOT
 import com.rout.navi.screen.main.tab.files.provider.RootShell
 import com.rout.navi.screen.main.tab.home.holder.RecentFile
+import com.rout.navi.screen.preferences.PreferencesManager
 import java.io.File
 
 object StorageProvider {
@@ -369,6 +370,26 @@ object StorageProvider {
     ): ArrayList<LocalFileHolder> {
         return getMediaFiles(MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO, sortingPrefs)
     }
+
+    /** Riwayat tontonan; berkas yang sudah hilang tetap tampil dengan tanda. */
+    suspend fun getWatchHistory(): ArrayList<LocalFileHolder> {
+        val prefs = globalClass.preferencesManager
+        val files = prefs.loadWatchHistory().map { entry ->
+            // Berkas hilang tidak dibuang, sama seperti daftar riwayat
+            // vlc-android: pemutar yang menolak membukanya.
+            entry to LocalFileHolder(File(entry.key))
+        }
+        val sorted = when (prefs.historySortOrder) {
+            PreferencesManager.HISTORY_SORT_OLDEST -> files.sortedBy { it.first.lastWatchedAt }
+            PreferencesManager.HISTORY_SORT_NAME_ASC -> files.sortedBy { it.second.displayName.lowercase() }
+            PreferencesManager.HISTORY_SORT_NAME_DESC -> files.sortedByDescending { it.second.displayName.lowercase() }
+            else -> files.sortedByDescending { it.first.lastWatchedAt }
+        }
+        return sorted.mapTo(ArrayList(sorted.size)) { it.second }
+    }
+
+    /** Kemajuan tontonan satu berkas untuk daftar riwayat, null bila belum ada. */
+    suspend fun getWatchEntry(path: String) = globalClass.preferencesManager.watchEntryFor(path)
 
     /**
      * Gets all audio files.

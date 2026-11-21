@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="36"
+    android:viewportHeight="36">
+  <!-- Layar memanjang dengan titik kunci di tengah: orientasi potret terkunci -->
+  <path
+      android:pathData="M13,6.5C11.9,6.5 11,7.4 11,8.5L11,27.5C11,28.6 11.9,29.5 13,29.5L23,29.5C24.1,29.5 25,28.6 25,27.5L25,8.5C25,7.4 24.1,6.5 23,6.5L13,6.5zM13,8.5L23,8.5L23,27.5L13,27.5L13,8.5zM18,16.5C17.2,16.5 16.5,17.2 16.5,18C16.5,18.8 17.2,19.5 18,19.5C18.8,19.5 19.5,18.8 19.5,18C19.5,17.2 18.8,16.5 18,16.5z"
+      android:fillColor="#FFFFFFFF"/>
+</vector>

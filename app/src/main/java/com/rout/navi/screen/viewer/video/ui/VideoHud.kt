@@ -73,6 +73,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rout.navi.R
+import com.rout.navi.screen.viewer.video.OrientationMode
 import com.rout.navi.common.toFormattedTime
 import com.rout.navi.screen.viewer.video.model.VideoPlayerState
 import com.rout.navi.screen.viewer.video.model.VideoScaleMode
@@ -97,6 +98,8 @@ fun VideoHud(
     onSeekTo: (Long) -> Unit,
     onPickTracks: () -> Unit,
     onChangeScale: () -> Unit,
+    onCycleOrientation: () -> Unit,
+    orientationMode: OrientationMode,
     onShowMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -188,6 +191,8 @@ fun VideoHud(
                 onSeekTo = onSeekTo,
                 onPickTracks = onPickTracks,
                 onChangeScale = onChangeScale,
+                onCycleOrientation = onCycleOrientation,
+                orientationMode = orientationMode,
                 onShowMore = onShowMore
             )
         }
@@ -196,6 +201,24 @@ fun VideoHud(
 
 /** Warna isi tombol dan teks di dalam HUD. Netral putih, bukan warna tema. */
 private val HudContent = Color.White
+
+/**
+ * Ikon dan label tombol rotasi mengikuti mode aktif. Auto memakai ikon
+ * putar otomatis, lanskap dan potret memakai ikon layar dengan arahnya.
+ */
+@Composable
+private fun OrientationMode.hudIconRes(): Int = when (this) {
+    OrientationMode.AUTO_VIDEO -> R.drawable.ic_player_screen_rotation
+    OrientationMode.LANDSCAPE -> R.drawable.ic_player_stay_landscape
+    else -> R.drawable.ic_player_stay_portrait
+}
+
+@Composable
+private fun OrientationMode.labelRes(): Int = when (this) {
+    OrientationMode.AUTO_VIDEO -> R.string.video_orientation_auto
+    OrientationMode.LANDSCAPE -> R.string.video_orientation_landscape
+    else -> R.string.video_orientation_portrait
+}
 
 @Composable
 private fun VideoTopBar(
@@ -249,6 +272,8 @@ private fun VideoBottomBar(
     onSeekTo: (Long) -> Unit,
     onPickTracks: () -> Unit,
     onChangeScale: () -> Unit,
+    onCycleOrientation: () -> Unit,
+    orientationMode: OrientationMode,
     onShowMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -384,6 +409,11 @@ private fun VideoBottomBar(
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                CircleIconButton(
+                    onClick = onCycleOrientation,
+                    iconRes = orientationMode.hudIconRes(),
+                    description = stringResource(orientationMode.labelRes())
+                )
                 CircleIconButton(
                     onClick = onChangeScale,
                     iconRes = R.drawable.ic_player_ratio,

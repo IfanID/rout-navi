@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesomeMotion
+import androidx.compose.material.icons.rounded.ArrowOutward
 import androidx.compose.material.icons.rounded.CheckBox
 import androidx.compose.material.icons.rounded.CheckBoxOutlineBlank
+import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.EditAttributes
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Menu
@@ -101,6 +103,33 @@ fun Toolbar(
                 )
             }
         }
+        // Lompat ke path dan keranjang sampah berada di kanan, sebelum tombol
+        // titik tiga, dipindah dari tab Home supaya bisa dibuka dari tab mana
+        // pun, bukan hanya dari beranda.
+        val mainActivityManager = globalClass.mainActivityManager
+
+        IconButton(
+            onClick = { mainActivityManager.toggleJumpToPathDialog(true) }
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.ArrowOutward,
+                contentDescription = stringResource(R.string.jump_to_path)
+            )
+        }
+
+        IconButton(
+            onClick = {
+                mainActivityManager.replaceCurrentTabWith(
+                    FilesTab(globalClass.recycleBinDir)
+                )
+            }
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.DeleteSweep,
+                contentDescription = stringResource(R.string.recycle_bin)
+            )
+        }
+
         MoreOptionsButton()
     }
 }
